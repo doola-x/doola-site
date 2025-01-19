@@ -1,0 +1,184 @@
+<html>
+	<head>
+		<meta charset="utf-8" >
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+		<link rel="icon" type="image/png" href="/img/ico.png" >
+		<meta name="viewport" content="width=device-width, initial-scale=1" >
+		<title>doola:blog</title>
+
+		<style>
+		   .title {
+		       position: relative;
+		       width: 100%;
+		       cursor: default;
+		       background: #6dadeb;
+		       opacity: 75%;
+		       font-size: 100%;
+		       border-top: none;
+		       border-left: 3px solid rgba(0, 0, 0, 0.5);
+		       border-bottom: 5px solid black;
+		       border-radius: 10px;
+		       min-height: 100px;
+		       top: 0;
+		   }
+		   .title > h1, p {
+		       text-align: left;
+		       font-family: "Roboto", sans-serif;
+		       font-weight: 500;
+		       opacity: 100%;
+		       font-size: 1em;
+		       font-style: normal;
+		       margin-block: 0px;
+		       margin-top: 10px;
+		       margin-left: 10px;
+		   }
+		   .header {
+		       display: flex;
+		       align-items: center;
+		       justify-content: center;
+		       margin-bottom: 30px;
+		   }
+		   .home-button{
+		       position: relative;
+		       background: url('/img/guy2.png') no-repeat;
+		       background-size: 100% 100%;
+		       justify-content: center;
+		       box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+		       cursor: pointer;
+		       border-top: none;
+		       border-bottom: 3px solid rgba(0, 0, 0, 0.5);
+		       border-radius: 10px;
+		       width: 6.5rem;
+		       height: 100px;
+		       margin: 10px;
+		       top: 0;
+		       transition: top ease .5s;
+		   }
+		   .home-button:hover {
+		       top: 1px;
+		   }
+		   .blog {
+		       border: 2px solid black;
+		       border-radius: 10px;
+		       width: max(300px, 50%);
+		       margin-bottom: 20px;
+		       transition: ease .3s;
+		       cursor: default;
+		   }
+		   .blog:hover {
+		       border: 3.5px solid black;
+		   }
+
+		   .blogs button {
+			position: relative;
+			font-family: "Press Start 2P", system-ui;
+			height: 50px;
+			width: 200px;
+			top: 0;
+			left: 15vw;
+			margin-top: 10px;
+			color: black;
+			border: 3px solid black;
+			border-radius: 8px;
+			background: #6dadeb;
+			transition: ease .7s;
+			cursor: pointer;
+		   }
+		  .blogs button:hover {
+		       border: 3.5px solid white;
+		       top: -5px;
+		   }
+		   .blog-title {
+		       position: relative;
+		       font-family: "Press Start 2P", system-ui;
+		       font-weight: 400;
+		       font-size: 18px;
+		       padding: 10px;
+		       top: 0;
+		       transition: top ease 0.5s;
+		   }
+		   .blog:hover .blog-title {
+		       top: 1px;
+		   }
+		   .blog-text {
+		       display: block;
+		       font-family: "Roboto", sans-serif;
+		       font-weight: 300;
+		       font-style: normal;
+		       margin-left: 10px;
+		   }
+		   .blog-text input {
+			border: 2px solid black;
+			border-radius: 10px;
+			font-family: "Press Start 2P", system-ui;
+			font-size: 18px;
+			height: 40px;
+			width: 90%;
+			margin: 10px;
+		   }
+		   .blogs {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+		   }
+		</style>
+	</head>
+	<body>
+		<div class="header">
+			<div class="title">
+				<br>
+				<span class="blog-title" style="display: flex; text-align: center; align-contents: center;"> tpot chess form </span>
+				<p style="margin-left: 40px;"> plz put last (semi) accurate information below. no special chars u sneaky bastards </p> <br>
+			</div>
+		</div>
+		<div class="blogs">
+			<div class="blog">
+				<div class="blog-title">name</div>
+				<div class="blog-text">
+					<span> first or last or tpot or whatever </span>
+					<br>
+					<input type="text" id="name">
+				</div>
+			</div>
+			<div class="blog">
+				<div class="blog-title">peak elo </div>
+				<div class="blog-text">
+					<span> estimates are fine but keep in mind pairing will be based on these. cc/lichess conversion is <span>&#177;</span>300 </span>
+					<br>
+					<div class="blog-title">lichess</div>
+					<input type="text" id="elolichess">
+					<div class="blog-title">chess.com</div>
+					<input type="text" id="elocc">
+				</div>
+			</div>
+			<div class="blog">
+				<div class="blog-title">username</div>
+				<div class="blog-text">
+				<span> please include at least one answer </span>
+					<div class="blog-title">lichess</div>
+					<input type="text" id="lichessuser">
+					<div class="blog-title">chess.com</div>
+					<input type="text" id="ccuser">
+				</div>
+			</div>
+			<div class="blog">
+				<div class="blog-title">what opening do you play with...</div>
+				<div class="blog-text">
+					<div class="blog-title">white</div>
+					<input type="text" id="owhite">
+					<div class="blog-title">black</div>
+					<input type="text" id="oblack">
+				</div>
+			</div>
+			<button> submit </button>
+			<br>
+			<br>
+			<br>
+		</div>
+		<script src="/js/tpot_chess.js"></script>
+	</body>
+</html>

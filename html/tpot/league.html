@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPOT Chess</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-title">tpot chess</div>
+        <input type="text" id="searchBar" placeholder="Search players or games..." />
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" id="toggleSidebar">☰</button>
+        <ul class="sidebar-menu">
+            <li><a href="#home" class="menu-link" data-page="home">home</a></li>
+            <li><a href="#search" class="menu-link" data-page="search">search</a></li>
+            <li><a href="#live" class="menu-link" data-page="live">live</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="mainContent">
+        <!-- Home Page -->
+        <section id="home" class="page active">
+            <h1>Recently Played Games</h1>
+            <div class="game-cards" id="gameCards">
+                <!-- Game cards will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Search Page -->
+        <section id="search" class="page">
+            <h1>Search Games</h1>
+            <div class="search-options">
+                <label for="sortBy">Sort By:</label>
+                <select id="sortBy">
+                    <option value="date">Date</option>
+                    <option value="winner">Winner</option>
+                    <option value="length">Game Length</option>
+                </select>
+                <button id="searchButton">Search</button>
+            </div>
+            <div class="search-results" id="searchResults">
+                <!-- Search results will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Live Games Page -->
+        <section id="live" class="page">
+            <h1>Live Games</h1>
+            <div class="live-games" id="liveGames">
+                <!-- Live games will be dynamically added here -->
+            </div>
+        </section>
+    </main>
+</body>
+</html>
+
