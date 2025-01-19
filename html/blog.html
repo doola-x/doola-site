@@ -40,7 +40,6 @@
 	       display: flex;
 	       align-items: center;
 	       justify-content: center;
-	       margin-bottom: 30px;
 	   }
 	   .home-button{
 	       position: relative;
@@ -63,6 +62,7 @@
 	   }
 	   .blog {
 	       border: 2px solid black;
+	       display: none;
 	       border-radius: 10px;
 	       margin-left: 30px;
 	       margin-bottom: 20px;
@@ -91,6 +91,50 @@
 	       font-style: normal;
 	       margin: 40px;
 	   }
+	   .filter-menu {
+		position: relative;
+		font-family: "Roboto", sans-serif;
+		font-weight: 300;
+		margin-top: -10px;
+		margin-bottom: 3vh;
+		width: 55vw;
+		height: 80px;
+		border: 2px solid black;
+		border-top: none;
+		border-radius: 3px;
+		left: 22vw;
+	   }
+	   .filters {
+		display: inline-block;
+		position: relative;
+		left: 5vw;
+	   }
+	   .filters div {
+		display: inline flex;
+		min-width: 5vw;
+		cursor: pointer;
+		height: 20px;
+		width: 10vw;
+		margin: 0 0 10px 10px;
+		justify-content: center;
+	   }
+	   .filter-button {
+		position: relative;
+		top: 0;
+		border: 2px solid black;
+		border-radius: 5px;
+		background: white;
+		transition: ease .3s;
+	   }
+	   .filter-button:hover {
+		background: slategray;
+	   }
+	   .button-active {
+		background: gray;
+	   }
+	   .blog-active {
+	   	display: block;
+	   }
 	</style>
 	</head>
 	<body>
@@ -102,15 +146,30 @@
 	           <p>hello, im jack. im interested in software developement, machine learning, and low level computer stuff.</p>
 	       </div>
 	   </div>
+	   <div class="filter-menu">
+		<div class="blog-title" style="font-size: 14px;"> filter </div>
+		<div class="filters">
+			<div id="tech" class="filter-button">tech</div>
+			<div id="personal" class="filter-button">personal</div>
+			<div id="research" class="filter-button">research</div>
+			<div id="music" class="filter-button">music</div>
+		</div>
+	   </div>
 	   <div class="blogs">
-		<div class="blog">
+		<div class="blog blog-active personal">
+			<div class="blog-title">doing things the hard way quickly</div>
+			<div class="blog-text">
+				<span>some quick thoughts i had while doing some site refactoring: i have always resonated with doing things the hard way in any capacity of learning at least once. there are lots of easy ways to get things done quickly in any discipline, but especially in tech with the advent of better coding LLMs and technical resources. you should use these tools early on to prevent spinning your wheels on something simplistic instead of allocating your time to areas of work that actually require rigorous study. HOWEVER -- it should be understood that you have to do whatever you are learning the hard way, on your own, with no tooling. treat it as a test of your knowledge -- if the internet was turned off tomorrow, could you still ship this new service from scratch? its a very dangerous mindset to assume you understand something without breaking the material down into its most basic terms. simplicity is your friend, but also your harshest critic, and if you can't reconstruct the functionality without taking a quick peek at your tooling, then you don't know it well enough yet. so do it fast and dirty, slop it together, but make sure it *works*, and you do it *alone*. then iterate, and use all the tooling you want to make it perfomant.</span>
+			</div>
+		</div>
+		<div class="blog blog-active tech">
 			<div class="blog-title">personal projects: stack ramblings</div>
 			<div class="blog-text">
 				<span>i recently started up an additional side project (just one more domain bro) and found myself thinking about what tech stack i should use to explore this idea. there are so many js frameworks to explore and trendy backend langs to deep dive into it can all be a bit overwhelming. certainly all of them are worth exploring, all in pursuit of becoming a better devloper right? i guess the question becomes *why* are you wanting to put time into this language? do you want a backend go position? trying to explore a new alternative to c (zig, c3)? i think all optios have merit but eventually most of us just want to learn more about web/application development at a deeper level. for that reason i chose to do just a plain html/css/js frontend stack, with a c++ api. its a bit absurd, considering i could just use php, but it feels nice to add complexity for no reason and figure out the intricacies. i am using crow for routing/http response support, so still a bit of it is abstracted away. but dealing with database interactions, 3rd party idP integrations and real-time data transactions in a low(er) level language is a fun challenge.</span><br><br>
 				<span>the project is called sharedlist (wip), and its essentially version control for music playlists. you can integrate with spotify and apple music (theoretically), and sync a sharedlist with a playlist on your account to try and pull changes, request a change, etc. (git for music? lol) development is under way but i imagine it will take a month or so before i can get a fully functional git for music running. a lot of the challenge runs in learning nginx properly as well as some linux best practices for running services and the like. ill post a link when its somewhat ready to be viewed/used!</span>
 			</div>
 		</div>
-		<div class="blog">
+		<div class="blog blog-active tech">
 			<div class="blog-title">chess ai and reinforcement learning</div>
 			<div class="blog-text">
 			<span>my one major foray into ai/ml/rl/{?} has been the training of my own chess bot. had the humble mnist beginnings as many do and decided that i could easily do this on my own, and quickly realized i had a lot of work in front of me. data collection seemed like an issue at first, but chess dot com actually has some great public apis that i was able to take advantage of. i converted each game into a series of fen positions and encoded each fen into an 8x8x13 tensor (8 ranks/files if you are familiar with chess, and then 13 possible states for each square.(piece type, color, empty)).</span>
@@ -122,7 +181,7 @@
 			<span> my current state with this project is trying to implement an actor-critic reinforcement learning system, where a value network assigns a scalar variable to certain positions based on future potential rewards, and the policy network (current model) navigates the decision making for all of these positions. thats a lot of words to say that both of these networks are incorporated in each others feedback loop and should improve together, increasing tactical decision making capabilities. </span>
 			</div>
 		</div>
-		<div class="blog">
+		<div class="blog blog-active tech">
 		   <div class="blog-title">ubuntu, nginx and super quick web servers</div>
 		   <div class="blog-text">
 		   	<span>linux and owning a vps are things that modern devs *(know)* about but if you are like me its hardly ever used in practice. my company hosts all our infra on windows (i know), and most of my personal development is local to my computer. spinning up quick web servers and networking protocols is something i know about in practice -- firewalls, dns, public ip, host config etc, but rarely something i want to execute on my own since i know that there are gaps in my knowledge and i dont want to leave myself hanging.</span>
@@ -131,14 +190,14 @@
 		   </div>
 		</div>
 
-		<div class="blog">
+		<div class="blog blog-active tech">
 	           <div class="blog-title">ai and machine learning</div>
 	           <div class="blog-text">
 	               <span>lately i have been reading a lot about reinforcement learning and autonomous agents. it seems like the next big leap forward is going to come out of this space, and i have been trying to understand the math and architecture. it made me think about how an llm could integrate into different learning setups. in what configuration would an agent benefit from the capabilities of an llm? in some setups for example, two networks interact with each other and redefine an action taking policy for a given state. reward for these actions is defined by the value network and the policy network is trained to look for these rewards over time and create a high value trajectory thru action(s) /a/ in state /s/. in what possible scenarios could an llm acting as the policy network in this actor-critic setup improve the value /v/ derived from actions taken? one would imagine the model would need to getting constant fine tunes as well which could be extremely costly computationally.</span>
 	           </div>
 	       </div>
 
-	       <div class="blog">
+	       <div class="blog blog-active tech">
 	           <div class="blog-title">web development and the frontend ecosystem</div>
 	           <div class="blog-text">
 	               <span>is javascript actually man made horrors beyond our comprehension? i have been learning some more js frameworks and diving a litte bit more into pure js for my own site purposes as well as for work. i do enjoy component development and think it makes sense in a lot of directions, however enterprise is always going to be messy. i feel its more of a question of where you want the mess because you *will* have some. not sure if the front end is the place for that however? a lot of mid level eneterprise software solutions always seem to have ridiculous amounts of tech debt in the stored procs, and while jsenv is confusing at times, it can provide a lot of usefulness as well. d.r.y. done a lot of damage in general as a mantra in the industry but it does do a lot of good for the problem it is attempting to solve.</span>
@@ -146,7 +205,7 @@
 	               <span>the issue becomes, what actually is that problem different js frameworks are trying to solve? and what problems still exist that are worth solving?</span>
 	           </div>
 	       </div>
-	       <div class="blog">
+	       <div class="blog blog-active research">
 	           <div class="blog-title">cool papers</div>
 	           <div class="blog-text">
 	               <span>going to treat this as a little archive ive papers i have read/am reading. topics may range from ai/ml to algs for common search problems, and any other little thing i decide to obsess on for a week or so.</span>
@@ -161,6 +220,60 @@
 		  </div>
 		</div>
 	</div>
+	<script>
+		document.getElementById('tech').addEventListener('click', function () {
+		    const buttons = document.querySelectorAll('.filter-button');
+		    buttons.forEach(button => button.classList.remove('button-active'));
+		    this.classList.add('button-active');
+		    const elements = document.querySelectorAll('.blog');
+		    elements.forEach(element => {
+			    if (!element.classList.contains('tech')) {
+				element.classList.remove('blog-active');
+			    } else {
+				element.classList.add('blog-active');
+			    }
+		    });
+		});
+		document.getElementById('research').addEventListener('click', function () {
+		    const buttons = document.querySelectorAll('.filter-button');
+		    buttons.forEach(button => button.classList.remove('button-active'));
+		    this.classList.add('button-active');
+		    const elements = document.querySelectorAll('.blog');
+		    elements.forEach(element => {
+			    if (!element.classList.contains('research')) {
+				element.classList.remove('blog-active');
+			    } else {
+				element.classList.add('blog-active');
+			    }
+		    });
+		});
+		document.getElementById('personal').addEventListener('click', function () {
+		    const buttons = document.querySelectorAll('.filter-button');
+		    buttons.forEach(button => button.classList.remove('button-active'));
+		    this.classList.add('button-active');
+		    const elements = document.querySelectorAll('.blog');
+		    elements.forEach(element => {
+			    if (!element.classList.contains('personal')) {
+				element.classList.remove('blog-active');
+			    } else {
+				element.classList.add('blog-active');
+			    }
+		    });
+		});
+		document.getElementById('music').addEventListener('click', function () {
+		    const buttons = document.querySelectorAll('.filter-button');
+		    buttons.forEach(button => button.classList.remove('button-active'));
+		    this.classList.add('button-active');
+		    const elements = document.querySelectorAll('.blog');
+		    elements.forEach(element => {
+			    if (!element.classList.contains('music')) {
+				element.classList.remove('blog-active');
+			    } else {
+				element.classList.add('blog-active');
+			    }
+		    });
+		});
+	</script>
    </body>
 </html>
 
