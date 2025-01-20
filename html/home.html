@@ -9,9 +9,12 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" >
 		<title>doola:home</title>
 		<style>
+			body {
+				overflow-x: hidden;
+			}
 			.title {
 				position: relative;
-				width: 100%;
+				width: 80%;
 				cursor: default;
 				background: #6dadeb;
 				opacity: 75%;
@@ -21,6 +24,7 @@
 				border-bottom: 5px solid black;
 				border-radius: 10px;
 				min-height: 100px;
+				padding-top: 10px;
 				top: 0;
 			}
 			.title > h1, p {
@@ -30,14 +34,14 @@
 				opacity: 100%;
 				font-size: 1em;
 				font-style: normal;
-				margin-block: 0px;
-				margin-top: 10px;
 				margin-left: 10px;
 			}
 			.header {
 				display: flex;
+				flex-wrap: wrap;
 				align-items: center;
 				justify-content: center;
+				overflow-x: hidden;
 			}
 			.home-button{
 				position: relative;
@@ -68,43 +72,223 @@
 				transition: top ease 0.5s;
 	   		}
 			.links {
-				display: flex;
+				position: relative;
+				z-index: 99;
+				display: inline flex;
+				flex-wrap: wrap;
 				width: 100%;
 				height: 80%;
 				border-radius: 10px;
-				background: slategray;
+				background: transparent;
 				justify-content: center;
 				align-items: center;
 			}
-			.links div {
-				display: inline flex;
+			.links .link {
+				display: inline;
+				border-radius: 0px;
+				z-index: 10;
 				font-family: "Press Start 2P", system-ui;
 				height: 150px;
+				min-width: 300px;
 				width: 300px;
 				background: white;
+				opacity: 85%;
 				border: 3px solid black;
 				margin: 50px;
-				justify-content: center;
+				position: relative;
+				overflow: hidden;
+				transition: 1s ease;
 			}
-			.link span {
+			.links .link:hover {
+				border-radius: 20px;
+				width: 600px;
+				height: 500px;
+				cursor: pointer;
+			}
+			.links .link iframe {
+				position: relative;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				border: none;
+				visibility: hidden;
+				opacity: 0;
+				transition: opacity 0.5s ease;
+			}
+
+			.links .link.hovered iframe {
+			    visibility: visible; 
+			    opacity: 1;
+			}
+			.text {
+				position: relative;
+				top: 0;
+				border: none;
+				display: block;
 				margin-top: 10px;
+				transition: .5s ease;
+			}
+			.text:hover {
+				top: 2px;
+			}
+			.text span {
+				margin-top: 30px;
+				margin-left: 10px;
+				font-weight: 300;
+			}
+			.text p {
+				text-align: left;
+			}
+
+			.replenish-container {
+				
+			}
+
+			.replenish {
+
+			}
+			canvas {
+				position: absolute;
+				background: white;
+				display: block;
+				z-index: 0;
+				overflow: hidden;
 			}
 		</style>
 	</head>
 	<body>
-	   <div class="header">
-	       <div class="home-button"></div>
-	       <div class="title">
-	           <br>
-	           <span class="blog-title" style="text-align: center;">home</span>
-	           <p>hello, im jack. im interested in software developement, machine learning, and low level operating system / hardware control. i have a background in music technology and was an audio enginner for a couple of large studios in chicago for the first few years of my career. i enjoy challenging problems, healthy competition, and disconnecting for a while after achieving something in either.</p>
-	       </div>
-	   </div>
-	   <div class="links">
-		<div class="link">
+	<canvas id="particle-canvas"></canvas>
+	<div class="header">
+	<div class="home-button" onclick="particles.replenish()"></div>
+	<div class="title">
+		<span class="blog-title" style="text-align: center; font-size: 16px;">home</span>
+		<p style="font-size: 15px;">hello, im jack. im interested in software developement, machine learning, and low level operating system / hardware control. im currently doing backend web development for a mid-sized financial services organization. i have a background in music technology and was an audio enginner for a couple of large studios in chicago for the first few years of my career. i enjoy challenging problems, healthy competition, and disconnecting for a while after achieving in either.</p>
+	</div>
+	</div>
+	<div class="links">
+		<div class="link" data-url="/blog.html" onclick="location.href = '/blog.html';">
+			<div class="text">
 			<span>blog</span>
+			<p style="font-size: 14px;">a short-form blog where i post about anything. ranges from my own forays into technology and research, music and audio or even personal griping.</p>
+			</div>
 		</div>
-		<div class="link">chess bot</div>
-	   </div>
+		<div class="link" data-url="/chess.html" onclick="location.href = '/chess.html';">
+			<div class="text">
+			<span>chess bot</span>
+			<p style="font-size: 14px;">a chess bot i trained with CNN and RNN neural network components. more recently adventured into LSTM and reinforcement learning for more tactical play. currently in training and under development.</p>
+		</div>
+	</div>
+	<script>
+		document.querySelectorAll('.links .link').forEach(link => {
+		    link.addEventListener('mouseover', () => {
+			if (!link.querySelector('iframe')) {
+			    const iframe = document.createElement('iframe');
+			    iframe.src = link.getAttribute('data-url');  
+			    link.appendChild(iframe); 
+			}
+			link.classList.add('hovered');
+		    });
+
+		    link.addEventListener('mouseout', () => {
+			link.classList.remove('hovered');
+		    });
+		});
+
+		const canvas = document.getElementById('particle-canvas');
+		const ctx = canvas.getContext('2d');
+		function resizeCanvas() {
+		    const parent = canvas.parentElement;
+		    canvas.width = parent.clientWidth;
+		    canvas.height = parent.clientHeight;
+		}
+		const mouse = { x: -9999, y: -9999 };
+		window.addEventListener('mousemove', (event) => {
+		    mouse.x = event.clientX;
+		    mouse.y = event.clientY;
+		});
+		resizeCanvas();
+		window.addEventListener('resize', resizeCanvas);
+
+		let particles = [];
+		class Particle {
+			constructor(x, y, vx, vy, size, color) {
+				this.x = x;
+				this.y = y;
+				this.vx = vx; // velocity x
+				this.vy = vy; // velocity y
+				this.size = size;
+				this.color = color;
+				this.angle = Math.random() * Math.PI * 2;
+			}
+
+			draw() {
+				ctx.beginPath();
+				ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+				ctx.fillStyle = this.color;
+				ctx.fill();
+		    	}
+
+			update() {
+				const dx = this.x - mouse.x;
+                		const dy = this.y - mouse.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				const maxDistance = 100; // interaction radius
+
+				if (distance < maxDistance) {
+					const force = (maxDistance - distance) / maxDistance; // stronger force closer to the mouse
+					const angle = Math.atan2(dy, dx);
+					this.vx += Math.cos(angle) * force * 2;
+					this.vy += Math.sin(angle) * force * 2;
+				} else if (this.vx >= .1 && this.vx <= -.1) {
+					this.vx *= 0.65;
+					this.vy *= 0.65;
+				}
+				this.x += Math.cos(this.angle) * this.vx;
+				this.y += Math.sin(this.angle) * this.vy;
+				particles = particles.filter(particle => {
+				    return particle.x > 0 && particle.x < canvas.width && particle.y > 0 && particle.y < canvas.height;
+				});
+
+				this.draw();
+		    	}
+
+			replenish() {
+				if (particles.length < 400) {
+					const delta = 400 - particles.length;
+					initParticles(delta);	
+				}
+			}
+		}
+
+		function initParticles(count) {
+		    for (let i = 0; i < count; i++) {
+			const size = Math.random() * 3 + 1; // random size between 1 and 4
+			const x = Math.random() * canvas.width;
+			const y = Math.random() * canvas.height;
+			const vx = (Math.random() - 0.5); // velocity x between -1 and 1
+			const vy = (Math.random() - 0.5); // velocity y between -1 and 1
+			const color = `rgba(112, 148, 144, ${Math.random()})`; // white with random opacity
+			particles.push(new Particle(x, y, vx, vy, size, color));
+		    }
+		}
+
+		function animate() {
+		    ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
+		    particles.forEach(particle => particle.update());
+		    requestAnimationFrame(animate);
+		}
+
+		window.addEventListener('resize', () => {
+		    canvas.width = window.innerWidth;
+		    canvas.height = window.innerHeight;
+		    particles.length = 0; // clear existing particles
+		    initParticles(200); // reinitialize particles
+		});
+
+		initParticles(400); 
+		animate();
+	</script>
 	</body>
+
 </html>

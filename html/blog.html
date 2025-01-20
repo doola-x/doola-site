@@ -91,31 +91,37 @@
 	       font-style: normal;
 	       margin: 40px;
 	   }
+	   .filters-wrapper {
+		display: flex;
+		justify-content: center;
+	   }
 	   .filter-menu {
 		position: relative;
 		font-family: "Roboto", sans-serif;
 		font-weight: 300;
-		margin-top: -10px;
 		margin-bottom: 3vh;
+		margin-top: 1vh;
 		width: 55vw;
+		min-width: 300px;
 		height: 80px;
 		border: 2px solid black;
 		border-top: none;
 		border-radius: 3px;
-		left: 22vw;
+		box-shadow: 0 0 5px 0;
 	   }
 	   .filters {
-		display: inline-block;
-		position: relative;
-		left: 5vw;
+		display: inline flex;
+		width: 100%;
+		justify-content: center;
 	   }
 	   .filters div {
 		display: inline flex;
-		min-width: 5vw;
+		width: 5vw;
+		min-width: 62px;
 		cursor: pointer;
 		height: 20px;
 		width: 10vw;
-		margin: 0 0 10px 10px;
+		margin: 0 0 8px 8px;
 		justify-content: center;
 	   }
 	   .filter-button {
@@ -139,13 +145,14 @@
 	</head>
 	<body>
 	   <div class="header">
-	       <div class="home-button"></div>
+	       <div class="home-button" onclick="location.href = '/home.html';"></div>
 	       <div class="title">
 	           <br>
 	           <span class="blog-title" style="text-align: center;">blog</span>
 	           <p>hello, im jack. im interested in software developement, machine learning, and low level computer stuff.</p>
 	       </div>
 	   </div>
+	   <div class="filters-wrapper">
 	   <div class="filter-menu">
 		<div class="blog-title" style="font-size: 14px;"> filter </div>
 		<div class="filters">
@@ -154,6 +161,7 @@
 			<div id="research" class="filter-button">research</div>
 			<div id="music" class="filter-button">music</div>
 		</div>
+	   </div>
 	   </div>
 	   <div class="blogs">
 		<div class="blog blog-active personal">
