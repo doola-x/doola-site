@@ -32,7 +32,6 @@
 				font-family: "Roboto", sans-serif;
 				font-weight: 500;
 				opacity: 100%;
-				font-size: 1em;
 				font-style: normal;
 				margin-left: 10px;
 			}
@@ -41,7 +40,6 @@
 				flex-wrap: wrap;
 				align-items: center;
 				justify-content: center;
-				overflow-x: hidden;
 			}
 			.home-button{
 				position: relative;
@@ -58,6 +56,7 @@
 				margin: 10px;
 				top: 0;
 				transition: top ease .5s;
+				z-index: 16;
 			}
 			.home-button:hover {
 				top: 1px;
@@ -65,15 +64,15 @@
 			.blog-title {
 				position: relative;
 				font-family: "Press Start 2P", system-ui;
-				font-weight: 400;
-				font-size: 18px;
+				font-weight: 300;
 				padding: 10px;
+				padding-bottom: 0px;
 				top: 0;
 				transition: top ease 0.5s;
 	   		}
 			.links {
 				position: relative;
-				z-index: 99;
+				z-index: 1;
 				display: inline flex;
 				flex-wrap: wrap;
 				width: 100%;
@@ -104,6 +103,7 @@
 				width: 600px;
 				height: 500px;
 				cursor: pointer;
+				padding-bottom: 100px;
 			}
 			.links .link iframe {
 				position: relative;
@@ -140,32 +140,65 @@
 			.text p {
 				text-align: left;
 			}
-
-			.replenish-container {
-				
-			}
-
-			.replenish {
-
-			}
 			canvas {
 				position: absolute;
 				background: white;
 				display: block;
-				z-index: 0;
+				z-index: -1;
 				overflow: hidden;
+			}
+			@keyframes bounce {
+				0%, 100% { transform: translateY(0); }
+  				50%      { transform: translateY(-2px); }
+			}
+			.dropdown {
+				display: none;
+				position: relative;
+				background: #6dadeb;
+				top: 115%;
+				height: 30px;
+				width: 100%;
+				opacity: 70%;
+				border: 2px solid black;
+				border-radius: 2px;
+				justify-content: center;
+				z-index: 15;
+				animation: bounce 1.5s ease-in-out infinite;
+			}
+			.dropdown p {
+				font-family: "Press Start 2P", system-ui;
+				font-size: 10px;
+			}
+			.dropdown-pointer {
+				position: absolute;
+				background: #6dadeb;
+				top: -6px; /* adjust height */
+				left: 50%;
+				transform: translateX(-50%) rotate(45deg);
+				width: 12px;
+				height: 12px;
+				border-left: 1px solid #6dadeb;
+				border-right: 1px solid #6dadeb;
+				border-bottom: 1px solid #6dadeb;
+				z-index: 15;
 			}
 		</style>
 	</head>
 	<body>
 	<canvas id="particle-canvas"></canvas>
 	<div class="header">
-	<div class="home-button" onclick="particles.replenish()"></div>
+	<div class="home-button" onclick="toggleReplenish();">
+		<div class="dropdown" id="replenish-dd">
+			<div class="dropdown-pointer"></div>
+			<p>click me!</p>
+		</div>
+	</div>
 	<div class="title">
 		<span class="blog-title" style="text-align: center; font-size: 16px;">home</span>
-		<p style="font-size: 15px;">hello, im jack. im interested in software developement, machine learning, and low level operating system / hardware control. im currently doing backend web development for a mid-sized financial services organization. i have a background in music technology and was an audio enginner for a couple of large studios in chicago for the first few years of my career. i enjoy challenging problems, healthy competition, and disconnecting for a while after achieving in either.</p>
+		<p style="font-size: 14px;">hello, im jack. im interested in software developement, machine learning, and low level operating system / hardware control. im currently doing backend web development for a mid-sized financial services organization. i have a background in music technology and was an audio enginner for a couple of large studios in chicago for the first few years of my career. i enjoy challenging problems, healthy competition, and disconnecting for a while after achieving in either.</p>
 	</div>
 	</div>
+	
 	<div class="links">
 		<div class="link" data-url="/blog.html" onclick="location.href = '/blog.html';">
 			<div class="text">
@@ -233,18 +266,18 @@
 				const dx = this.x - mouse.x;
                 		const dy = this.y - mouse.y;
 				const distance = Math.sqrt(dx * dx + dy * dy);
-				const maxDistance = 100; // interaction radius
+				const maxDistance = 200; // interaction radius
 
 				if (distance < maxDistance) {
 					const force = (maxDistance - distance) / maxDistance; // stronger force closer to the mouse
-					const angle = Math.atan2(dy, dx);
+					const angle = Math.atan2(dy, dx * 1.5);
 					this.vx += Math.cos(angle) * force * 2;
 					this.vy += Math.sin(angle) * force * 2;
 				} else if (this.vx >= .1 && this.vx <= -.1) {
 					this.vx *= 0.65;
 					this.vy *= 0.65;
 				}
-				this.x += Math.cos(this.angle) * this.vx;
+				this.x += Math.sin(this.angle) * this.vx;
 				this.y += Math.sin(this.angle) * this.vy;
 				particles = particles.filter(particle => {
 				    return particle.x > 0 && particle.x < canvas.width && particle.y > 0 && particle.y < canvas.height;
@@ -279,13 +312,30 @@
 		    requestAnimationFrame(animate);
 		}
 
+		function toggleAfterTimer(id, time) {
+			setTimeout(() => {
+				const el = document.getElementById(id);
+				if (!el) {
+					console.log('no element to toggle...');
+					return;
+				}
+				console.log(el.style.display);
+				el.style.display = (el.style.display == 'none' || el.style.display == '') ? 'block' : 'none';
+			}, time);
+		}
+
+		function toggleReplenish() {
+			particles[0].replenish();	
+			toggleAfterTimer('replenish-dd', 2500);
+		}
+
 		window.addEventListener('resize', () => {
 		    canvas.width = window.innerWidth;
 		    canvas.height = window.innerHeight;
 		    particles.length = 0; // clear existing particles
 		    initParticles(200); // reinitialize particles
 		});
-
+		toggleAfterTimer('replenish-dd', 5000);
 		initParticles(400); 
 		animate();
 	</script>
