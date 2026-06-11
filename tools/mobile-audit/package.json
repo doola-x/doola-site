@@ -1,0 +1,14 @@
+{
+  "name": "doola-mobile-audit",
+  "version": "1.0.0",
+  "scripts": {
+    "audit": "node audit.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Headless-Chrome mobile compatibility audit for the doola site",
+  "dependencies": {
+    "puppeteer-core": "^25.1.0"
+  }
+}

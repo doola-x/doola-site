@@ -106,7 +106,7 @@
 		margin-top: 1vh;
 		width: 50%;
 		min-width: 280px;
-		height: 80px;
+		min-height: 80px;
 		border: 2px solid black;
 		border-top: none;
 		border-radius: 3px;
@@ -119,13 +119,13 @@
 	   }
 	   .filters div {
 		display: inline flex;
-		width: 5vw;
 		min-width: 60px;
 		cursor: pointer;
-		height: 20px;
+		height: 28px;
 		width: 10vw;
 		margin: 0 0 8px 8px;
 		justify-content: center;
+		align-items: center;
 	   }
 	   .filter-button {
 		position: relative;
@@ -143,6 +143,24 @@
 	   }
 	   .blog-active {
 	   	display: block;
+	   }
+	   /* give inline links a comfortable touch target without shifting layout */
+	   .blog-text a {
+		display: inline-block;
+		padding: 8px 6px;
+		margin: -8px -6px -8px 0;
+	   }
+	   .blog-text li {
+		margin: 10px 0;
+	   }
+	   @media (max-width: 600px) {
+		.blog {
+			margin-left: 8px;
+			margin-right: 8px;
+		}
+		.blog-text {
+			margin: 16px;
+		}
 	   }
 	</style>
 	</head>
