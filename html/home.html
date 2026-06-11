@@ -282,6 +282,7 @@
 
 		let particles = [];
 		let flares = [];
+		const BASE_RGB = [112, 148, 144]; // muted slate for the idle field
 		class Particle {
 			constructor(x, y, vx, vy, size, rgb) {
 				this.x = x;
@@ -289,7 +290,8 @@
 				this.vx = vx; // velocity x
 				this.vy = vy; // velocity y
 				this.size = size;
-				this.rgb = rgb;
+				this.neon = rgb.split(',').map(Number); // latent color, revealed by interaction
+				this.energy = 0; // 0 = calm slate, 1 = fully lit neon
 				this.alpha = Math.random() * 0.6 + 0.3;
 				this.angle = Math.random() * Math.PI * 2;
 				this.flicker = Math.random() * 0.03 + 0.005;
@@ -297,11 +299,17 @@
 
 			draw() {
 				const pulse = this.alpha * (0.75 + 0.25 * Math.sin(this.angle));
+				const e = this.energy;
+				const r = Math.round(BASE_RGB[0] + (this.neon[0] - BASE_RGB[0]) * e);
+				const g = Math.round(BASE_RGB[1] + (this.neon[1] - BASE_RGB[1]) * e);
+				const b = Math.round(BASE_RGB[2] + (this.neon[2] - BASE_RGB[2]) * e);
 				ctx.beginPath();
 				ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-				ctx.fillStyle = `rgba(${this.rgb}, ${pulse})`;
-				ctx.shadowColor = `rgb(${this.rgb})`;
-				ctx.shadowBlur = this.size * 5;
+				ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${pulse})`;
+				if (e > 0.05) {
+					ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
+					ctx.shadowBlur = this.size * 5 * e;
+				}
 				ctx.fill();
 				ctx.shadowBlur = 0;
 		    	}
@@ -315,15 +323,22 @@
 				if (distance < maxDistance) {
 					const force = (maxDistance - distance) / maxDistance; // stronger force closer to the pointer
 					const angle = Math.atan2(dy, dx * 1.5);
-					this.vx += Math.cos(angle) * force * 2;
-					this.vy += Math.sin(angle) * force * 2;
-				} else if (Math.abs(this.vx) > .1 || Math.abs(this.vy) > .1) {
-					this.vx *= 0.65;
-					this.vy *= 0.65;
+					this.vx += Math.cos(angle) * force * 1.2;
+					this.vy += Math.sin(angle) * force * 1.2;
+					this.energy = 1; // light up
 				}
+				// gentle friction so momentum carries and particles coast after interaction
+				this.vx *= 0.97;
+				this.vy *= 0.97;
+				const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+				if (speed > 6) {
+					this.vx *= 6 / speed;
+					this.vy *= 6 / speed;
+				}
+				this.energy *= 0.96; // the colored trace fades back to slate
 				this.angle += this.flicker;
-				this.x += Math.sin(this.angle) * this.vx;
-				this.y += Math.sin(this.angle) * this.vy;
+				this.x += this.vx + Math.sin(this.angle) * 0.4;
+				this.y += this.vy + Math.cos(this.angle) * 0.4;
 
 				this.draw();
 		    	}
