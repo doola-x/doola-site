@@ -12,7 +12,7 @@
 		<style>
 			body {
 				overflow-x: hidden;
-				background: #0b0613;
+				background: white;
 			}
 			.title {
 				position: relative;
@@ -152,7 +152,7 @@
 				position: fixed;
 				top: 0;
 				left: 0;
-				background: #0b0613;
+				background: white;
 				display: block;
 				z-index: -1;
 				overflow: hidden;
@@ -383,7 +383,7 @@
 
 		function animate() {
 		    // translucent wipe instead of a clear, so particles leave neon trails
-		    ctx.fillStyle = 'rgba(11, 6, 19, 0.3)';
+		    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
 		    ctx.fillRect(0, 0, canvas.width, canvas.height);
 		    particles = particles.filter(p => p.x > -50 && p.x < canvas.width + 50 && p.y > -50 && p.y < canvas.height + 50);
 		    particles.forEach(particle => particle.update());
