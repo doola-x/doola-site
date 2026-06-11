@@ -246,6 +246,7 @@
 		function resizeCanvas() {
 			canvas.width = window.innerWidth;
 			canvas.height = window.innerHeight;
+			ctx.lineCap = 'round'; // resizing resets canvas state
 		}
 		const mouse = { x: -9999, y: -9999 };
 		window.addEventListener('pointermove', (event) => {
@@ -277,6 +278,20 @@
 			}
 			return EVA_COLORS[0].rgb;
 		}
+
+		// pre-built rgba strings so the hot loop never does string work
+		const ALPHA_STEPS = 16;
+		function buildLUT(rgb, maxAlpha) {
+			const lut = [];
+			for (let i = 0; i < ALPHA_STEPS; i++) {
+				lut.push(`rgba(${rgb}, ${(maxAlpha * i / (ALPHA_STEPS - 1)).toFixed(3)})`);
+			}
+			return lut;
+		}
+		const SLATE_LUT = buildLUT('112, 148, 144', 1);
+		const TRAIL_LUTS = {};
+		EVA_COLORS.forEach(c => TRAIL_LUTS[c.rgb] = buildLUT(c.rgb, 0.7));
+		const TWO_PI = Math.PI * 2;
 		// scale particle count to screen area so phones don't melt
 		function targetCount() {
 			return Math.max(120, Math.min(400, Math.round(window.innerWidth * window.innerHeight / 2500)));
@@ -284,7 +299,6 @@
 
 		let particles = [];
 		let flares = [];
-		const BASE_RGB = '112, 148, 144'; // muted slate, the particle itself never changes
 		class Particle {
 			constructor(x, y, vx, vy, size, rgb) {
 				this.x = x;
@@ -292,67 +306,58 @@
 				this.vx = vx; // velocity x
 				this.vy = vy; // velocity y
 				this.size = size;
-				this.rgb = rgb; // neon shows only in the trail left behind
+				this.trail = TRAIL_LUTS[rgb]; // color shows only in the wake left behind
 				this.energy = 0; // how recently the pointer stirred this particle
 				this.alpha = Math.random() * 0.6 + 0.3;
 				this.angle = Math.random() * Math.PI * 2;
 				this.flicker = Math.random() * 0.03 + 0.005;
 			}
 
-			draw(prevX, prevY) {
-				// neon wake behind the particle, fading as energy decays
-				if (this.energy > 0.05) {
-					ctx.strokeStyle = `rgba(${this.rgb}, ${this.energy * 0.7})`;
-					ctx.lineWidth = this.size;
-					ctx.lineCap = 'round';
-					ctx.shadowColor = `rgb(${this.rgb})`;
-					ctx.shadowBlur = this.size * 4 * this.energy;
-					ctx.beginPath();
-					ctx.moveTo(prevX, prevY);
-					ctx.lineTo(this.x, this.y);
-					ctx.stroke();
-					ctx.shadowBlur = 0;
-				}
-				const pulse = this.alpha * (0.75 + 0.25 * Math.sin(this.angle));
-				ctx.beginPath();
-				ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-				ctx.fillStyle = `rgba(${BASE_RGB}, ${pulse})`;
-				ctx.fill();
-		    	}
-
 			update() {
 				const dx = this.x - mouse.x;
                 		const dy = this.y - mouse.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				const maxDistance = 200; // interaction radius
+				const d2 = dx * dx + dy * dy;
 
-				if (distance < maxDistance) {
-					const force = (maxDistance - distance) / maxDistance; // stronger force closer to the pointer
+				if (d2 < 40000) { // within the 200px interaction radius
+					const distance = Math.sqrt(d2);
+					const force = (200 - distance) / 200; // stronger force closer to the pointer
 					const angle = Math.atan2(dy, dx * 1.5);
 					this.vx += Math.cos(angle) * force * 2;
 					this.vy += Math.sin(angle) * force * 2;
 					this.energy = 1;
-				} else {
+				} else if (this.vx * this.vx + this.vy * this.vy > 0.36) {
 					// ease back toward idle drift speed instead of stopping dead
-					const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-					if (speed > 0.6) {
-						this.vx *= 0.98;
-						this.vy *= 0.98;
-					}
+					this.vx *= 0.98;
+					this.vy *= 0.98;
 				}
-				const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-				if (speed > 8) {
-					this.vx *= 8 / speed;
-					this.vy *= 8 / speed;
+				const sp2 = this.vx * this.vx + this.vy * this.vy;
+				if (sp2 > 64) { // cap speed at 8
+					const scale = 8 / Math.sqrt(sp2);
+					this.vx *= scale;
+					this.vy *= scale;
 				}
 				this.energy *= 0.96;
 				this.angle += this.flicker;
 				const prevX = this.x;
 				const prevY = this.y;
-				this.x += Math.sin(this.angle) * this.vx;
-				this.y += Math.sin(this.angle) * this.vy;
+				const sinA = Math.sin(this.angle);
+				this.x += sinA * this.vx;
+				this.y += sinA * this.vy;
 
-				this.draw(prevX, prevY);
+				// fading wake behind stirred particles; no shadows here, they wreck framerate
+				if (this.energy > 0.06) {
+					ctx.strokeStyle = this.trail[(this.energy * (ALPHA_STEPS - 1)) | 0];
+					ctx.lineWidth = this.size;
+					ctx.beginPath();
+					ctx.moveTo(prevX, prevY);
+					ctx.lineTo(this.x, this.y);
+					ctx.stroke();
+				}
+				const pulse = this.alpha * (0.75 + 0.25 * sinA);
+				ctx.fillStyle = SLATE_LUT[(pulse * (ALPHA_STEPS - 1)) | 0];
+				ctx.beginPath();
+				ctx.arc(this.x, this.y, this.size, 0, TWO_PI);
+				ctx.fill();
 		    	}
 		}
 
@@ -363,7 +368,8 @@
 				this.y = y;
 				this.life = 0;
 				this.maxLife = 45; // frames
-				this.rgb = Math.random() < 0.5 ? '196, 59, 40' : '178, 134, 74';
+				// the cross keeps its full nge neon, the one loud thing on the page
+				this.rgb = Math.random() < 0.5 ? '0, 255, 102' : '157, 78, 221';
 			}
 
 			update() {
@@ -409,13 +415,27 @@
 		}
 
 		function animate() {
-		    // translucent wipe instead of a clear, so particles leave neon trails
+		    // translucent wipe instead of a clear, so particles leave trails
 		    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
 		    ctx.fillRect(0, 0, canvas.width, canvas.height);
-		    particles = particles.filter(p => p.x > -50 && p.x < canvas.width + 50 && p.y > -50 && p.y < canvas.height + 50);
-		    particles.forEach(particle => particle.update());
-		    flares = flares.filter(flare => !flare.dead);
-		    flares.forEach(flare => flare.update());
+		    // compact in place: drop off-screen particles without allocating a new array
+		    let w = 0;
+		    for (let i = 0; i < particles.length; i++) {
+			const p = particles[i];
+			if (p.x > -50 && p.x < canvas.width + 50 && p.y > -50 && p.y < canvas.height + 50) {
+				particles[w++] = p;
+				p.update();
+			}
+		    }
+		    particles.length = w;
+		    w = 0;
+		    for (let i = 0; i < flares.length; i++) {
+			if (!flares[i].dead) {
+				flares[w++] = flares[i];
+				flares[i].update();
+			}
+		    }
+		    flares.length = w;
 		    requestAnimationFrame(animate);
 		}
 
