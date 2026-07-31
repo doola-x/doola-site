@@ -2,6 +2,11 @@ import { Chess } from 'https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/ch
 
 const ENGINE_URL = 'https://doola.dev/inference';
 
+// Give up on the engine after this long and show the resign modal. The server
+// answers in well under a second when healthy, so anything near this means it
+// is wedged, restarting, or unreachable.
+const ENGINE_TIMEOUT_MS = 10000;
+
 var game = new Chess();
 
 // You play white, the engine answers as black. Set while a request is in
@@ -13,27 +18,42 @@ function showSpinner(on) {
 	if (spinner) spinner.style.display = on ? "block" : "none";
 }
 
-function showResigns() {
+function setResigns(on) {
 	const resigns = document.getElementById("resigns");
-	if (resigns) resigns.style.display = "block";
+	if (resigns) resigns.style.display = on ? "block" : "none";
 }
 
 function reportGameOver() {
-	console.log(game.in_checkmate() ? 'checkmate' : 'draw');
+	if (!game.in_checkmate()) {
+		console.log('draw');
+		return;
+	}
+	// game.turn() is the side that has been mated. "i resign!" is the engine
+	// talking, so only show it when the engine is the one that lost — popping
+	// it when you get mated would have it conceding a game it just won.
+	const engineMated = game.turn() === 'b';
+	console.log(engineMated ? 'engine checkmated' : 'you were checkmated');
+	if (engineMated) setResigns(true);
 }
 
 function askEngine() {
 	waitingForEngine = true;
+	setResigns(false);          // clear any modal left over from a prior game
 	showSpinner(true);
+
+	// fetch has no native timeout — without this a wedged or unreachable
+	// server just hangs the spinner forever instead of resigning.
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), ENGINE_TIMEOUT_MS);
 
 	fetch(ENGINE_URL, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ fen: game.fen() })
+		body: JSON.stringify({ fen: game.fen() }),
+		signal: controller.signal
 	})
 	.then(response => {
 		if (!response.ok) {
-			showResigns();
 			throw new Error('Network response was not ok: ' + response.statusText);
 		}
 		return response.json();
@@ -45,7 +65,7 @@ function askEngine() {
 		// .flags off it throws — so checkmate looked like a frozen board.
 		if (!data || data.length < 2) {
 			if (game.game_over()) reportGameOver();
-			else showResigns();
+			else setResigns(true);
 			return;
 		}
 
@@ -57,15 +77,23 @@ function askEngine() {
 		});
 		if (move === null) {
 			console.error('engine sent an illegal move:', data, 'for', game.fen());
-			showResigns();
+			setResigns(true);
 			return;
 		}
 
 		board.position(game.fen());
 		if (game.game_over()) reportGameOver();
 	})
-	.catch(error => console.error('Error: ', error))
+	.catch(error => {
+		if (error.name === 'AbortError') {
+			console.warn('engine timed out after ' + ENGINE_TIMEOUT_MS + 'ms');
+		} else {
+			console.error('Error: ', error);
+		}
+		setResigns(true);
+	})
 	.finally(() => {
+		clearTimeout(timer);
 		waitingForEngine = false;
 		showSpinner(false);
 	});
