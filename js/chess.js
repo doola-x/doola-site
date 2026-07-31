@@ -1,160 +1,115 @@
 import { Chess } from 'https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js';
 
-function parseFEN(fen) {
-    let parts = fen.split(' ');
-    return {
-        position: parts[0],
-        turn: parts[1],
-        castling: parts[2],
-        enPassant: parts[3],
-        halfMove: parts[4],
-        fullMove: parts[5]
-    };
+const ENGINE_URL = 'https://doola.dev/inference';
+
+var game = new Chess();
+
+// You play white, the engine answers as black. Set while a request is in
+// flight so you can't move for the engine while it is still thinking.
+let waitingForEngine = false;
+
+function showSpinner(on) {
+	const spinner = document.getElementById("loader");
+	if (spinner) spinner.style.display = on ? "block" : "none";
 }
 
-function expandFEN(fenPosition) {
-    let rows = fenPosition.split('/');
-    let fullLayout = {};
-    let currentFile = 'a', currentRank = '8';
-
-    rows.forEach(row => {
-        currentFile = 'a';
-        for (let char of row) {
-            if (isNaN(char)) {
-                fullLayout[currentFile + currentRank] = char;
-                currentFile = String.fromCharCode(currentFile.charCodeAt(0) + 1);
-            } else {
-                // Skip over empty squares
-                for (let i = 0; i < parseInt(char); i++) {
-                    currentFile = String.fromCharCode(currentFile.charCodeAt(0) + 1);
-                }
-            }
-        }
-        currentRank = String.fromCharCode(currentRank.charCodeAt(0) - 1);
-    });
-
-    return fullLayout;
+function showResigns() {
+	const resigns = document.getElementById("resigns");
+	if (resigns) resigns.style.display = "block";
 }
 
-function updateCastling(fen, move) {
-    if (move.includes('e1') || move.includes('h1')) {
-        fen.castling = fen.castling.replace('K', '');
-    }
-    if (move.includes('e1') || move.includes('a1')) {
-        fen.castling = fen.castling.replace('Q', '');
-    }
-    return `${fen.position} ${fen.turn} ${fen.castling} ${fen.enPassant} ${fen.halfMove} ${fen.fullMove}`;
+function reportGameOver() {
+	console.log(game.in_checkmate() ? 'checkmate' : 'draw');
 }
 
-function toggleTurn(fen) {
-    let fenParts = parseFEN(fen);
-    fenParts.turn = fenParts.turn === 'w' ? 'b' : 'w';
-    return `${fenParts.position} ${fenParts.turn} ${fenParts.castling} ${fenParts.enPassant} ${fenParts.halfMove} ${fenParts.fullMove}`;
+function askEngine() {
+	waitingForEngine = true;
+	showSpinner(true);
+
+	fetch(ENGINE_URL, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ fen: game.fen() })
+	})
+	.then(response => {
+		if (!response.ok) {
+			showResigns();
+			throw new Error('Network response was not ok: ' + response.statusText);
+		}
+		return response.json();
+	})
+	.then(data => {
+		// The server sends "" when the game is over, it has no legal move,
+		// or the FEN was rejected. Without this we build
+		// "undefined-undefined", game.move() returns null, and reading
+		// .flags off it throws — so checkmate looked like a frozen board.
+		if (!data || data.length < 2) {
+			if (game.game_over()) reportGameOver();
+			else showResigns();
+			return;
+		}
+
+		// data[2] is the promotion piece, present only on promotions.
+		const move = game.move({
+			from: data[0],
+			to: data[1],
+			promotion: data[2] || 'q'
+		});
+		if (move === null) {
+			console.error('engine sent an illegal move:', data, 'for', game.fen());
+			showResigns();
+			return;
+		}
+
+		board.position(game.fen());
+		if (game.game_over()) reportGameOver();
+	})
+	.catch(error => console.error('Error: ', error))
+	.finally(() => {
+		waitingForEngine = false;
+		showSpinner(false);
+	});
 }
 
-function updateFullMove(fen, lastMoveColor) {
-    let fenParts = parseFEN(fen);
-    if (lastMoveColor === 'b') {  // Increment after black moves
-        fenParts.fullMove = parseInt(fenParts.fullMove) + 1;
-    }
-    return `${fenParts.position} ${fenParts.turn} ${fenParts.castling} ${fenParts.enPassant} ${fenParts.halfMove} ${fenParts.fullMove}`;
+function onDragStart(source, piece) {
+	// Replaces the old `if (piece.startsWith('w'))` wrapper around the fetch.
+	// That accepted a black drag and then quietly declined to answer it,
+	// leaving the game a move out of step; refusing the drag is clearer.
+	if (game.game_over()) return false;
+	if (waitingForEngine) return false;
+	if (piece.startsWith('b')) return false;
 }
 
-function updateHalfMove(fen, move, isCapture, isPawnMove) {
-    let fenParts = parseFEN(fen);
-    if (isCapture || isPawnMove) {
-        fenParts.halfMove = '0';
-    } else {
-        fenParts.halfMove = parseInt(fenParts.halfMove) + 1;
-    }
-    return `${fenParts.position} ${fenParts.turn} ${fenParts.castling} ${fenParts.enPassant} ${fenParts.halfMove} ${fenParts.fullMove}`;
-}
-
-function processMove(fen, from, to, playerColor) {
-    let board = expandFEN(parseFEN(fen).position);
-    let isCapture = board[to] && board[to] !== ' '; // Assumes non-empty square is a capture
-    let isPawnMove = board[from] === 'p'; // Assumes 'p' or 'P' is a pawn
-
-    fen = parseFEN(fen);
-    let updatedFEN = updateCastling(fen, (to+from));
-    console.log(updatedFEN);
-    updatedFEN = updateHalfMove(updatedFEN, (to+from), isCapture, isPawnMove);
-    console.log(updatedFEN);
-    updatedFEN = toggleTurn(updatedFEN);
-    console.log(updatedFEN);
-    updatedFEN = updateFullMove(updatedFEN, playerColor);
-
-    return updatedFEN;
-}
-
-function onDrop (source, target, piece, newPos) {
-	var move = game.move({
+function onDrop(source, target, piece) {
+	const move = game.move({
 		from: source,
 		to: target,
-		promotion: 'q' // always promote to a queen 
-	})
+		promotion: 'q' // always promote to a queen
+	});
 	// illegal move
-	if (move === null) return 'snapback'
-        if (piece.startsWith('w')) {
-		if (move.flags === 'k') {
-			//do kingside castle
-			board.move('h1-f1');
-		} else if (move.flags === 'q') {
-			// do queenside castle
-			board.move('a1-d1');
-		}
-                // show spinner on black king
-                const spinner = document.getElementById("loader");
-		const resigns = document.getElementById("resigns");
-                spinner.style.display = "block";
-		const fen = game.fen();
-		console.log(fen);
-                fetch('https://doola.dev/inference', {
-                        method: 'POST',
-                        headers: {
-                                'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ fen: fen })
-                })
-                .then(response => {
-                        spinner.style.display = "none";
-                        if (!response.ok){
-				resigns.style.display = "block";
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                        }
-                        return response.json();
-                })
-                .then(data => {
-			const arr = data;
-			/*const arr = data.result.
-                                replace("('", '').
-                                replace("')", '').
-                                split("', '");*/
-                        const move = arr[0] + '-' + arr[1];
-                        board.move(move);
-			var move2 = game.move({
-				from: arr[0],
-				to: arr[1],
-				promotion: 'q'
-			});
-			if (move2.flags === 'k') {
-				//do kingside castle
-				board.move('h8-f8');
-			} else if (move2.flags === 'q') {
-				// do queenside castle
-				board.move('a8-d8');
-			}
-			//console.log(second_fen);
-                        spinner.style.display = "none";
-                })
-                .catch(error => console.error('Error: ', error));
-        }
+	if (move === null) return 'snapback';
+
+	if (game.game_over()) {
+		reportGameOver();
+		return;
+	}
+	askEngine();
 }
+
+function onSnapEnd() {
+	// Resync from game state here rather than in onDrop — doing it mid-drop
+	// fights the snap animation. Covers castling's rook, promotion and en
+	// passant, all of which a plain drag renders wrong.
+	board.position(game.fen());
+}
+
 var board = Chessboard('board', {
-        draggable: true,
-        onDrop,
-        position: 'start',
-        dropOffBoard: 'snapback'
+	draggable: true,
+	onDragStart,
+	onDrop,
+	onSnapEnd,
+	position: 'start',
+	dropOffBoard: 'snapback'
 });
-var game = new Chess();
+
 $(window).resize(board.resize);
