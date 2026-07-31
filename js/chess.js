@@ -2,6 +2,26 @@ import { Chess } from 'https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/ch
 
 const ENGINE_URL = 'https://doola.dev/inference';
 
+// The library default is the RELATIVE path "img/chesspieces/wikipedia/...",
+// which resolves against the page URL rather than the site root. Every other
+// asset in chess.html is absolute, so pin this the same way.
+const PIECE_THEME = '/img/chesspieces/wikipedia/{piece}.png';
+
+// chessboard.js redraws by destroying every piece <img> and rebuilding them
+// (drawPositionInstant). That happens twice a turn — once when your drop
+// settles, once when the engine's move animation finishes. Recreated <img>
+// elements have to be decoded before they paint, and a cold cache means a
+// frame of empty board each time, which is the flicker. Warm all twelve once
+// at startup so the rebuild is instant.
+function preloadPieces() {
+	['wK', 'wQ', 'wR', 'wB', 'wN', 'wP',
+	 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'].forEach(function (piece) {
+		const img = new Image();
+		img.src = PIECE_THEME.replace('{piece}', piece);
+	});
+}
+preloadPieces();
+
 // Give up on the engine after this long and show the resign modal. The server
 // answers in well under a second when healthy, so anything near this means it
 // is wedged, restarting, or unreachable.
@@ -26,14 +46,11 @@ function setResigns(on) {
 	if (resigns) resigns.style.display = on ? "block" : "none";
 }
 
-// board.position() re-renders every piece on the board. board.move() animates
-// only the piece that moved. Prefer the latter — a full re-render on every
-// half-move is what makes the board flicker.
-//
-// Three move types can't be expressed as a single animated move, so they still
-// need the full resync: castling moves a rook too, promotion swaps the piece
-// for a different one, and en passant removes a pawn that isn't on the target
-// square. chess.js flags: k/q castle, p promotion, e en passant.
+// After your own drag, chessboard.js has already placed the piece on the target
+// square, so a normal move needs no redraw at all. Three move types do, because
+// the drag only moved one piece: castling also moves a rook, promotion swaps
+// the piece for a different one, and en passant removes a pawn that is not on
+// the target square. chess.js flags: k/q castle, p promotion, e en passant.
 function needsFullResync(move) {
 	return /[epkq]/.test(move.flags);
 }
@@ -96,11 +113,11 @@ function askEngine() {
 			return;
 		}
 
-		if (needsFullResync(move)) {
-			board.position(game.fen());
-		} else {
-			board.move(data[0] + '-' + data[1]);
-		}
+		// board.move() is just board.position() with the target computed from
+		// the move, so there is nothing cheaper about it. Drive from game
+		// state instead — that way the board can never drift from the rules
+		// engine, and castling/promotion/en passant need no special case.
+		board.position(game.fen());
 		if (game.game_over()) reportGameOver();
 	})
 	.catch(error => {
@@ -160,12 +177,7 @@ function onSnapEnd() {
 
 var board = Chessboard('board', {
 	draggable: true,
-	// The library's default pieceTheme is the RELATIVE path
-	// "img/chesspieces/wikipedia/{piece}.png", which resolves against the page
-	// URL rather than the site root. Every other asset in chess.html is
-	// absolute, so pin this the same way — a 404 here means pieces re-request
-	// on each redraw, which reads as flicker.
-	pieceTheme: '/img/chesspieces/wikipedia/{piece}.png',
+	pieceTheme: PIECE_THEME,
 	onDragStart,
 	onDrop,
 	onSnapEnd,
