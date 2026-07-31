@@ -13,6 +13,9 @@ var game = new Chess();
 // flight so you can't move for the engine while it is still thinking.
 let waitingForEngine = false;
 
+// Set by onDrop, consumed by onSnapEnd — see needsFullResync.
+let resyncOnSnap = false;
+
 function showSpinner(on) {
 	const spinner = document.getElementById("loader");
 	if (spinner) spinner.style.display = on ? "block" : "none";
@@ -21,6 +24,18 @@ function showSpinner(on) {
 function setResigns(on) {
 	const resigns = document.getElementById("resigns");
 	if (resigns) resigns.style.display = on ? "block" : "none";
+}
+
+// board.position() re-renders every piece on the board. board.move() animates
+// only the piece that moved. Prefer the latter — a full re-render on every
+// half-move is what makes the board flicker.
+//
+// Three move types can't be expressed as a single animated move, so they still
+// need the full resync: castling moves a rook too, promotion swaps the piece
+// for a different one, and en passant removes a pawn that isn't on the target
+// square. chess.js flags: k/q castle, p promotion, e en passant.
+function needsFullResync(move) {
+	return /[epkq]/.test(move.flags);
 }
 
 function reportGameOver() {
@@ -81,7 +96,11 @@ function askEngine() {
 			return;
 		}
 
-		board.position(game.fen());
+		if (needsFullResync(move)) {
+			board.position(game.fen());
+		} else {
+			board.move(data[0] + '-' + data[1]);
+		}
 		if (game.game_over()) reportGameOver();
 	})
 	.catch(error => {
@@ -117,6 +136,10 @@ function onDrop(source, target, piece) {
 	// illegal move
 	if (move === null) return 'snapback';
 
+	// onSnapEnd fires after the drag animation settles; tell it whether this
+	// move needs a redraw at all.
+	resyncOnSnap = needsFullResync(move);
+
 	if (game.game_over()) {
 		reportGameOver();
 		return;
@@ -125,14 +148,24 @@ function onDrop(source, target, piece) {
 }
 
 function onSnapEnd() {
-	// Resync from game state here rather than in onDrop — doing it mid-drop
-	// fights the snap animation. Covers castling's rook, promotion and en
-	// passant, all of which a plain drag renders wrong.
+	// The drag already put your piece on the target square, so a normal move
+	// needs no redraw — repainting all 32 pieces here was the flicker. Only
+	// castling, promotion and en passant actually need the board resynced,
+	// and onSnapEnd is the right place for it (doing it inside onDrop fights
+	// the snap animation).
+	if (!resyncOnSnap) return;
+	resyncOnSnap = false;
 	board.position(game.fen());
 }
 
 var board = Chessboard('board', {
 	draggable: true,
+	// The library's default pieceTheme is the RELATIVE path
+	// "img/chesspieces/wikipedia/{piece}.png", which resolves against the page
+	// URL rather than the site root. Every other asset in chess.html is
+	// absolute, so pin this the same way — a 404 here means pieces re-request
+	// on each redraw, which reads as flicker.
+	pieceTheme: '/img/chesspieces/wikipedia/{piece}.png',
 	onDragStart,
 	onDrop,
 	onSnapEnd,
