@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" >
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+		<link rel="icon" type="image/png" href="/img/ico.png" >
+		<meta name="viewport" content="width=device-width, initial-scale=1" >
+		<meta name="description" content="spsc-q: a bounded, lock-free single-producer / single-consumer ring queue in c++20." >
+		<title>doola:spsc</title>
+		<style>
+			:root {
+				--ink: #1c1e1b;
+				--muted: #5f6a5b;
+				--rule: #d8d6ce;
+				--moss: #748e66;
+				--ochre: #b2864a;
+				--clay: #965f3e;
+				--panel: #17191a;
+			}
+			body {
+				background: white;
+				overflow-x: hidden;
+				color: var(--ink);
+			}
+			.header {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: center;
+				overflow-x: hidden;
+			}
+			.home-button {
+				position: relative;
+				background: url('/img/guy2.png') no-repeat;
+				background-size: 100% 100%;
+				justify-content: center;
+				box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+				cursor: pointer;
+				border-top: none;
+				border-bottom: 3px solid rgba(0, 0, 0, 0.5);
+				border-radius: 10px;
+				width: 6.5rem;
+				height: 100px;
+				margin: 10px;
+				top: 0;
+				transition: top ease .5s;
+			}
+			.home-button:hover {
+				top: 1px;
+			}
+			.title {
+				position: relative;
+				width: 80%;
+				cursor: default;
+				background: #6dadeb;
+				opacity: 75%;
+				font-size: 100%;
+				border-top: none;
+				border-left: 3px solid rgba(0, 0, 0, 0.5);
+				border-bottom: 5px solid black;
+				border-radius: 10px;
+				min-height: 100px;
+				top: 0;
+				box-shadow: 0 0 14px rgba(116, 142, 102, 0.4);
+			}
+			.title p {
+				text-align: left;
+				font-family: "Roboto", sans-serif;
+				font-weight: 500;
+				font-size: 1em;
+				margin-block: 0;
+				margin-top: 10px;
+				margin-left: 10px;
+				padding-bottom: 10px;
+				padding-right: 10px;
+			}
+			.blog-title {
+				position: relative;
+				font-family: "Press Start 2P", system-ui;
+				font-weight: 400;
+				font-size: 18px;
+				padding: 10px;
+				top: 0;
+			}
+			.wrap {
+				max-width: 860px;
+				margin: 0 auto;
+				padding: 0 20px 80px;
+				box-sizing: border-box;
+			}
+			.meta {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: 8px;
+				margin: 26px 0 30px;
+				font-family: "Roboto", sans-serif;
+				font-size: 13px;
+				color: var(--muted);
+			}
+			.tag {
+				border: 1px solid var(--rule);
+				border-radius: 999px;
+				padding: 4px 11px;
+				background: #fbfbf9;
+			}
+			.repo-link {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				margin-left: auto;
+				padding: 7px 14px;
+				border: 2px solid var(--ink);
+				border-radius: 6px;
+				background: white;
+				color: var(--ink);
+				text-decoration: none;
+				font-family: "Press Start 2P", system-ui;
+				font-size: 10px;
+				box-shadow: 2px 2px 0 rgba(28, 30, 27, 0.85);
+				transition: transform .18s ease, box-shadow .18s ease;
+			}
+			.repo-link:hover {
+				transform: translate(2px, 2px);
+				box-shadow: 0 0 0 rgba(28, 30, 27, 0.85);
+			}
+			.section {
+				margin: 0 0 34px;
+			}
+			.section h2 {
+				font-family: "Press Start 2P", system-ui;
+				font-size: 13px;
+				font-weight: 400;
+				letter-spacing: 0.5px;
+				margin: 0 0 14px;
+				padding-bottom: 10px;
+				border-bottom: 1px solid var(--rule);
+			}
+			.section p,
+			.section li {
+				font-family: "Roboto", sans-serif;
+				font-weight: 300;
+				font-size: 15px;
+				line-height: 1.65;
+				color: #2b2f2a;
+			}
+			.section p {
+				margin: 0 0 12px;
+			}
+			.section ul {
+				margin: 0;
+				padding-left: 20px;
+			}
+			.section li {
+				margin: 0 0 10px;
+			}
+			.section li b {
+				font-weight: 500;
+			}
+			code.inl {
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 13px;
+				background: #f3f2ee;
+				border: 1px solid var(--rule);
+				border-radius: 3px;
+				padding: 1px 5px;
+			}
+			.files {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+				gap: 12px;
+				margin-top: 6px;
+			}
+			.file {
+				border: 1px solid var(--rule);
+				border-left: 3px solid var(--moss);
+				border-radius: 4px;
+				padding: 12px 14px;
+				background: #fbfbf9;
+			}
+			.file h3 {
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 12.5px;
+				font-weight: 500;
+				margin: 0 0 6px;
+				color: var(--clay);
+			}
+			.file p {
+				font-family: "Roboto", sans-serif;
+				font-weight: 300;
+				font-size: 13.5px;
+				line-height: 1.5;
+				margin: 0;
+				color: #3a3f38;
+			}
+
+			/* ---- embedded source ---- */
+			.source {
+				border: 1px solid #24282a;
+				border-radius: 8px;
+				overflow: hidden;
+				background: var(--panel);
+				box-shadow: 0 10px 30px rgba(28, 30, 27, 0.18);
+			}
+			.source-bar {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				padding: 10px 14px;
+				background: #1e2223;
+				border-bottom: 1px solid #2b3032;
+			}
+			.source-bar .path {
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 12.5px;
+				color: #9aa398;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			.source-bar .spacer { margin-left: auto; }
+			.source-bar button,
+			.source-bar a {
+				font-family: "Roboto", sans-serif;
+				font-size: 12px;
+				color: #b9c0b3;
+				background: transparent;
+				border: 1px solid #363c3d;
+				border-radius: 4px;
+				padding: 4px 10px;
+				cursor: pointer;
+				text-decoration: none;
+				transition: background .2s ease, color .2s ease, border-color .2s ease;
+			}
+			.source-bar button:hover,
+			.source-bar a:hover {
+				background: #262b2c;
+				color: #e4e2da;
+				border-color: #4a5150;
+			}
+			.code {
+				margin: 0;
+				padding: 14px 0;
+				overflow-x: auto;
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 12.5px;
+				line-height: 1.65;
+				tab-size: 4;
+				-moz-tab-size: 4;
+				color: #d9d7d0;
+				white-space: pre;
+			}
+			.code code {
+				font: inherit;
+			}
+			.cl {
+				display: flex;
+				min-width: max-content;
+			}
+			.cl:hover {
+				background: #1d2122;
+			}
+			.gut {
+				position: sticky;
+				left: 0;
+				flex: 0 0 auto;
+				width: 3.2em;
+				padding-right: 14px;
+				text-align: right;
+				color: #4d554e;
+				background: var(--panel);
+				user-select: none;
+				-webkit-user-select: none;
+			}
+			.cl:hover .gut {
+				color: #7e887d;
+			}
+			.src {
+				flex: 1 1 auto;
+				padding-right: 24px;
+				white-space: pre;
+			}
+			.t-cmt  { color: #67735f; font-style: italic; }
+			.t-pp   { color: #b0563f; }
+			.t-kw   { color: #b2864a; }
+			.t-ty   { color: #8fa47c; }
+			.t-num,
+			.t-str  { color: #b07a5c; }
+			.t-fn   { color: #c8c3b4; }
+			.t-pun  { color: #868d84; }
+			.note {
+				font-family: "Roboto", sans-serif;
+				font-weight: 300;
+				font-size: 13px;
+				color: var(--muted);
+				margin-top: 10px;
+			}
+			.note a { color: var(--clay); }
+			@media (max-width: 600px) {
+				.wrap { padding: 0 12px 50px; }
+				.repo-link { margin-left: 0; }
+				.code { font-size: 11.5px; }
+				.gut { width: 2.6em; padding-right: 10px; }
+			}
+		</style>
+	</head>
+	<body>
+		<div class="header">
+			<div class="home-button" onclick="location.href = '/home.html';"></div>
+			<div class="title">
+				<br>
+				<span class="blog-title">spsc queue</span>
+				<p>a bounded, lock-free single-producer / single-consumer ring queue in c++20. one writer, one reader, no mutex, no allocation on the hot path.</p>
+			</div>
+		</div>
+
+		<div class="wrap">
+			<div class="meta">
+				<span class="tag">c++20</span>
+				<span class="tag">header-only</span>
+				<span class="tag">lock-free</span>
+				<span class="tag">no hot-path alloc</span>
+				<a class="repo-link" href="https://github.com/doola-x/spsc-q/tree/main" target="_blank" rel="noopener">github &#8599;</a>
+			</div>
+
+			<div class="section">
+				<h2>what it is</h2>
+				<p>a fixed-capacity ring buffer shared by exactly two threads: one that only pushes and one that only pops. that single constraint is what buys everything else. with one writer and one reader there is nothing to arbitrate, so the whole structure comes down to two counters and a pair of acquire / release fences &mdash; no locks, no CAS loop, no retry.</p>
+				<p>it is built for trading-style hot paths: pay for everything once, up front, then run <code class="inl">try_push</code> / <code class="inl">try_pop</code> in a tight loop where every operation is a bounds check, a placement new, and one atomic increment. both calls are non-blocking and return <code class="inl">false</code> instead of waiting &mdash; full is a valid answer, and so is empty.</p>
+			</div>
+
+			<div class="section">
+				<h2>design notes</h2>
+				<ul>
+					<li><b>small buffer optimization.</b> capacity at or below <code class="inl">InlineCapacity</code> lives in an inline <code class="inl">std::byte</code> array right inside the object, so a small queue is one contiguous chunk of memory with no indirection and good locality. go past the threshold and it takes a single heap allocation at construction &mdash; never again after that.</li>
+					<li><b>raw storage, explicit lifetimes.</b> the buffer is untyped bytes, aligned with <code class="inl">alignas(T)</code>. elements are constructed in place with placement new and destroyed by an explicit destructor call on pop. nothing is default-constructed just to be overwritten later, which matters when <code class="inl">T</code> is something like a <code class="inl">std::function</code> task.</li>
+					<li><b>no false sharing.</b> <code class="inl">head_</code> and <code class="inl">tail_</code> are each <code class="inl">alignas(64)</code>, so the consumer's counter and the producer's counter land on separate cache lines. without that padding the two threads would ping-pong the same line back and forth and the lock-free version would lose to the mutex it was meant to beat.</li>
+					<li><b>monotonic counters, modulo indexing.</b> the counters only ever increase; occupancy is just <code class="inl">tail - head</code> and the slot is <code class="inl">(counter % capacity_) * sizeof(T)</code>. that removes the classic ambiguity where a full ring and an empty ring look identical, without burning a slot to distinguish them.</li>
+					<li><b>minimal ordering.</b> each side reads its own counter <code class="inl">relaxed</code> (nobody else writes it) and the other side's counter <code class="inl">acquire</code>. the increment that publishes the work is <code class="inl">release</code>. that pairing is exactly enough to guarantee the reader sees a fully constructed element before it sees the index that exposes it, and not one fence more.</li>
+					<li><b>push takes ownership late.</b> <code class="inl">try_push</code> checks for room before it moves from its argument, so a failed push on a full queue leaves the caller's value intact and never touches shared storage.</li>
+					<li><b>move, don't copy.</b> copy construction and copy assignment are deleted &mdash; copying a queue that another thread is writing into is not a meaningful operation. the move operations transfer the heap pointer and memcpy the inline bytes, and assume the source queue has been drained.</li>
+				</ul>
+			</div>
+
+			<div class="section">
+				<h2>benching it</h2>
+				<p><code class="inl">bench/bench_queue.cpp</code> moves ten million <code class="inl">uint64_t</code> values from a producer thread to the main thread and times the round trip, three ways:</p>
+				<ul>
+					<li><b>spsc::Queue</b> &mdash; producer spins on <code class="inl">try_push</code>, consumer spins on <code class="inl">try_pop</code>. no locks, no per-op allocation.</li>
+					<li><b>std::queue + mutex</b> &mdash; take the lock on every single push and pop.</li>
+					<li><b>std::queue + condvar</b> &mdash; same, plus a condition variable the consumer waits on, so you pay a syscall whenever it actually sleeps.</li>
+				</ul>
+				<p>each one runs twice to warm up before the timed pass, and <code class="inl">main()</code> prints elapsed seconds and millions of ops/sec side by side. numbers move around a lot between machines, so it is worth running yourself &mdash; <code class="inl">make bench</code>.</p>
+			</div>
+
+			<div class="section">
+				<h2>the poc</h2>
+				<p><code class="inl">src/main.cpp</code> wraps the queue in something closer to how you would actually deploy it. a <code class="inl">QueuePool</code> placement-news a worst-case <code class="inl">Q_MAX</code> queues into one aligned buffer and hands them out through <code class="inl">acquire()</code> / <code class="inl">release()</code> against a simple free list &mdash; so a thread gets a queue without ever hitting the allocator. <code class="inl">release()</code> calls <code class="inl">reset()</code>, which destroys whatever is still in flight and rewinds both counters.</p>
+				<p>the payload is a <code class="inl">Task</code>: an id plus a <code class="inl">std::function</code> holding some simulated cpu work and a 25% chance of a microsecond sleep to stand in for i/o. the main thread pops and executes while the producer is still filling, so the ring runs up against its capacity and both sides genuinely contend &mdash; which is the point. in a real system this is the shape of a dispatcher: hand each worker a queue, keep the hot loop lock-free, and never allocate to move work around.</p>
+				<div class="files">
+					<div class="file">
+						<h3>include/spsc/queue.hpp</h3>
+						<p>the queue itself. the whole library, one header.</p>
+					</div>
+					<div class="file">
+						<h3>bench/bench_queue.cpp</h3>
+						<p>throughput against mutex and condvar baselines.</p>
+					</div>
+					<div class="file">
+						<h3>src/main.cpp</h3>
+						<p>queue pool + task dispatch proof of concept.</p>
+					</div>
+					<div class="file">
+						<h3>Makefile</h3>
+						<p><code class="inl">make build</code> and <code class="inl">make bench</code>. clang++, -O2, -pthread.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="section">
+				<h2>the source</h2>
+				<div class="source">
+					<div class="source-bar">
+						<span class="path">include/spsc/queue.hpp</span>
+						<span class="spacer"></span>
+						<button id="copy" type="button">copy</button>
+						<a href="https://github.com/doola-x/spsc-q/blob/main/include/spsc/queue.hpp" target="_blank" rel="noopener">raw &#8599;</a>
+					</div>
+					<pre class="code" id="code"><code>#pragma once
+
+// SPSC, bounded, lock-free ring queue with small buffer optimization.
+// capacity &lt;= InlineCapacity -&gt; inline storage, else one heap alloc up front
+
+#include &lt;atomic&gt;
+#include &lt;cstddef&gt;
+#include &lt;cstring&gt;
+#include &lt;utility&gt;
+
+namespace spsc {
+template &lt;typename T, std::size_t InlineCapacity = 64&gt;
+class Queue {
+	
+	public:
+		Queue(std::size_t capacity = InlineCapacity);
+		~Queue();
+		Queue(Queue&amp;&amp;);
+		Queue&amp; operator=(Queue&amp;&amp;);
+
+		// delete copy and copy assignment constructors
+		Queue(const Queue&amp;) = delete;
+		Queue&amp; operator=(const Queue&amp;) = delete;
+
+		bool try_push(T value);
+		bool try_pop(T&amp; out);
+		inline void reset() {
+			std::size_t head = head_.load();
+			std::size_t tail = tail_.load();
+			std::byte* s = heap_ ? heap_ : inline_;
+			for (std::size_t i = 0; i &lt; (tail - head); i++) {
+				std::size_t idx = ((head + i) % capacity_) * sizeof(T);
+				reinterpret_cast&lt;T*&gt;(&amp;s[idx])-&gt;~T();
+			}
+			head_.store(0);
+			tail_.store(0);
+		}
+
+		std::size_t capacity() const { return capacity_; }
+		bool is_inline() const { return heap_ == nullptr; }
+
+	private:
+		alignas(T) std::byte inline_[InlineCapacity * sizeof(T)];
+		std::byte* heap_ = nullptr;
+		std::size_t capacity_ = 0;
+
+		alignas(64) std::atomic&lt;std::size_t&gt; head_{0};  // consumer
+		alignas(64) std::atomic&lt;std::size_t&gt; tail_{0};  // producer
+};
+
+template &lt;typename T, std::size_t InlineCapacity&gt;
+Queue&lt;T, InlineCapacity&gt;::Queue(std::size_t capacity) {
+	// if capacity is greater than our threshold, use indirection
+	// otherwise we benefit from locality
+	if (capacity &gt; InlineCapacity) {
+		heap_ = new std::byte[capacity * sizeof(T)];
+	}
+	capacity_ = capacity;
+}
+
+template &lt;typename T, std::size_t InlineCapacity&gt;
+Queue&lt;T, InlineCapacity&gt;::~Queue() {
+	// load head and tail -- they let us check occupancy and 
+	// index into our ring buffer
+	std::size_t head = head_.load();
+	std::size_t tail = tail_.load();
+	std::byte *s = heap_ ? heap_ : inline_;
+
+	for (std::size_t i = 0; i &lt; (tail - head); i++) {
+		std::size_t idx = ((head + i) % capacity_) * sizeof(T);
+		reinterpret_cast&lt;T*&gt;(&amp;s[idx])-&gt;~T();
+	}
+	delete[] heap_;
+}
+
+template &lt;typename T, std::size_t InlineCapacity&gt;
+Queue&lt;T, InlineCapacity&gt;::Queue(Queue&lt;T, InlineCapacity&gt;&amp;&amp; value) {
+	// move ctor assumes the queue has been reset().
+	// move resources, memcpy inline raw bytes
+	capacity_ = value.capacity_;
+	heap_ = value.heap_;
+	head_.store(value.head_.load());
+	tail_.store(value.tail_.load());
+	std::memcpy(inline_, value.inline_, sizeof(inline_));
+	value.heap_ = nullptr;
+}
+
+template &lt;typename T, std::size_t InlineCapacity&gt;
+Queue&lt;T, InlineCapacity&gt;&amp; Queue&lt;T, InlineCapacity&gt;::operator=(Queue&lt;T, InlineCapacity&gt;&amp;&amp; value) {
+	// move assignment assumes the queue is empty.
+	// move resources, memcpy inline raw bytes to new value
+
+	if (this == &amp;value) return *this; // prevent self assignment
+
+	capacity_ = value.capacity_;
+	heap_ = value.heap_;
+	head_.store(value.head_.load());
+	tail_.store(value.tail_.load());
+	std::memcpy(inline_, value.inline_, sizeof(inline_));
+	value.heap_ = nullptr;
+	return *this;
+}
+
+template &lt;typename T, std::size_t InlineCapacity&gt;
+bool Queue&lt;T, InlineCapacity&gt;::try_push(T value) {
+	// grab head and tail to determine occupancy
+	std::size_t head = head_.load(std::memory_order_acquire);
+	std::size_t tail = tail_.load(std::memory_order_relaxed);
+	if ((tail - head) &gt;= capacity_) {
+		return false;
+	}
+
+	// grab offset to determine where to emplace new value
+	std::byte *s = heap_ ? heap_ : inline_;
+	std::size_t idx = (tail % capacity_) * sizeof(T);
+
+	// construct T in place and increment producer
+	new (&amp;s[idx]) T(std::move(value));
+	tail_.fetch_add(1, std::memory_order_release);
+
+	return true;
+}
+
+template &lt;typename T, std::size_t InlineCapacity&gt;
+bool Queue&lt;T, InlineCapacity&gt;::try_pop(T&amp; out) {
+	// grab head and tail to determine occupancy
+	std::size_t head = head_.load(std::memory_order_relaxed);
+	std::size_t tail = tail_.load(std::memory_order_acquire);
+	if ((tail - head) == 0) {
+		return false;
+	}
+
+	// grab consumer offset to determine which item to pop
+	std::byte *s = heap_ ? heap_ : inline_;
+	std::size_t idx = (head % capacity_) * sizeof(T);
+
+	// cast T into rvalue for assignment, invoke dtor, increment consumer
+	out = std::move(*reinterpret_cast&lt;T*&gt;(&amp;s[idx]));
+	reinterpret_cast&lt;T*&gt;(&amp;s[idx])-&gt;~T();
+	head_.fetch_add(1, std::memory_order_release);
+	return true;
+}
+
+}</code></pre>
+				</div>
+				<p class="note">mirrored from <a href="https://github.com/doola-x/spsc-q/blob/main/include/spsc/queue.hpp" target="_blank" rel="noopener">doola-x/spsc-q</a>.</p>
+			</div>
+		</div>
+
+		<script>
+			// tiny line-scoped c++ tokenizer -- no block comments in this file,
+			// so nothing ever needs to carry state across a newline.
+			const KEYWORDS = new Set([
+				'alignas', 'bool', 'class', 'const', 'constexpr', 'delete', 'else',
+				'false', 'for', 'if', 'inline', 'namespace', 'new', 'nullptr',
+				'operator', 'private', 'public', 'return', 'sizeof', 'static',
+				'struct', 'template', 'this', 'true', 'typename', 'using', 'void',
+				'while'
+			]);
+			const TYPES = new Set([
+				'std', 'spsc', 'Queue', 'T', 'byte', 'size_t', 'atomic', 'memory_order',
+				'memory_order_acquire', 'memory_order_relaxed', 'memory_order_release',
+				'InlineCapacity', 'reinterpret_cast', 'static_cast', 'move', 'memcpy'
+			]);
+
+			function esc(text) {
+				return text.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]);
+			}
+
+			function span(cls, text) {
+				return '<span class="t-' + cls + '">' + esc(text) + '</span>';
+			}
+
+			function highlightCode(text) {
+				let out = '';
+				const re = /("(?:[^"\\]|\\.)*")|(\b0[xX][0-9a-fA-F]+\b|\b\d[\d']*(?:\.\d+)?\b)|([A-Za-z_]\w*)|([{}()\[\];,.:<>=+\-*\/%&|!~?]+)/g;
+				let last = 0;
+				let match;
+				while ((match = re.exec(text)) !== null) {
+					out += esc(text.slice(last, match.index));
+					last = re.lastIndex;
+					if (match[1]) {
+						out += span('str', match[1]);
+					} else if (match[2]) {
+						out += span('num', match[2]);
+					} else if (match[3]) {
+						const word = match[3];
+						if (KEYWORDS.has(word)) out += span('kw', word);
+						else if (TYPES.has(word)) out += span('ty', word);
+						else if (text[re.lastIndex] === '(') out += span('fn', word);
+						else out += esc(word);
+					} else {
+						out += span('pun', match[4]);
+					}
+				}
+				return out + esc(text.slice(last));
+			}
+
+			function highlightLine(line) {
+				if (/^\s*#/.test(line)) {
+					const lead = line.match(/^\s*/)[0];
+					const rest = line.slice(lead.length);
+					const directive = rest.match(/^#\w*/)[0];
+					const tail = rest.slice(directive.length);
+					const target = tail.match(/[<"][^>"]*[>"]/);
+					return esc(lead) + span('pp', directive) +
+						(target
+							? esc(tail.slice(0, target.index)) + span('str', target[0]) +
+							  esc(tail.slice(target.index + target[0].length))
+							: esc(tail));
+				}
+				const at = line.indexOf('//');
+				if (at !== -1) {
+					return highlightCode(line.slice(0, at)) + span('cmt', line.slice(at));
+				}
+				return highlightCode(line);
+			}
+
+			const pre = document.getElementById('code');
+			const source = pre.textContent.replace(/\n$/, '');
+			pre.innerHTML = source.split('\n').map((line, i) =>
+				'<div class="cl"><span class="gut">' + (i + 1) + '</span>' +
+				'<span class="src">' + (highlightLine(line) || '\u200b') + '</span></div>'
+			).join('');
+
+			const copyButton = document.getElementById('copy');
+			copyButton.addEventListener('click', async () => {
+				try {
+					await navigator.clipboard.writeText(source);
+					copyButton.textContent = 'copied';
+				} catch (err) {
+					copyButton.textContent = 'ctrl+c';
+				}
+				setTimeout(() => { copyButton.textContent = 'copy'; }, 1600);
+			});
+		</script>
+	</body>
+</html>

@@ -72,81 +72,143 @@
 				top: 0;
 				transition: top ease 0.5s;
 	   		}
+			/* project cards ---------------------------------------------------
+			   every card lives in a fixed-size slot that already reserves the
+			   expanded footprint, so a card growing never reflows its siblings.
+			   the slot is also the hover target: it never moves or resizes, so
+			   the pointer cannot fall out of it mid-transition and flicker. */
 			.links {
+				--card-w: 300px;
+				--card-h: 180px;
+				--card-w-open: 440px;
+				--card-h-open: 380px;
 				position: relative;
 				z-index: 1;
-				display: inline flex;
+				display: flex;
 				flex-wrap: wrap;
-				width: 100%;
-				height: 80%;
-				border-radius: 10px;
-				background: transparent;
 				justify-content: center;
 				align-items: center;
+				gap: 8px 28px;
+				width: 100%;
+				padding: 10px 0 50px;
+				box-sizing: border-box;
+			}
+			.slot {
+				flex: 0 0 auto;
+				position: relative;
+				width: var(--card-w-open);
+				height: var(--card-h-open);
+				display: flex;
+				align-items: center;
+				justify-content: center;
 			}
 			.links .link {
-				display: inline;
-				border-radius: 0px;
-				z-index: 10;
-				font-family: "Press Start 2P", system-ui;
-				height: 150px;
-				min-width: 0;
-				width: min(300px, calc(100vw - 40px));
+				position: absolute;
+				display: flex;
+				flex-direction: column;
+				width: var(--card-w);
+				height: var(--card-h);
+				box-sizing: border-box;
 				background: white;
-				opacity: 85%;
+				opacity: 0.88;
 				border: 3px solid black;
+				border-radius: 0;
 				box-shadow: 0 0 14px rgba(150, 95, 62, 0.4);
-				margin: 50px;
-				position: relative;
+				font-family: "Press Start 2P", system-ui;
 				overflow: hidden;
-				transition: 1s ease;
-			}
-			.links .link:hover {
-				border-radius: 20px;
-				width: min(600px, calc(100vw - 40px));
-				height: 500px;
 				cursor: pointer;
-				padding-bottom: 100px;
+				contain: layout paint;
+				will-change: width, height;
+				transition: width .5s cubic-bezier(.22, .61, .36, 1),
+					    height .5s cubic-bezier(.22, .61, .36, 1),
+					    border-radius .5s ease,
+					    box-shadow .5s ease,
+					    opacity .3s ease;
 			}
-			@media (max-width: 820px) {
-				.links .link {
-					margin: 16px;
-				}
+			.slot:hover .link,
+			.slot:focus-within .link {
+				width: var(--card-w-open);
+				height: var(--card-h-open);
+				border-radius: 20px;
+				opacity: 1;
+				box-shadow: 0 0 22px rgba(150, 95, 62, 0.55);
+				z-index: 12;
+			}
+			.links .link:focus-visible {
+				outline: 3px solid rgba(196, 59, 40, 0.8);
+				outline-offset: 2px;
+			}
+			.preview {
+				flex: 1 1 auto;
+				min-height: 0;
+				margin-top: 8px;
+				overflow: hidden;
+				opacity: 0;
+				transition: opacity .35s ease;
+			}
+			.slot:hover .preview,
+			.slot:focus-within .preview {
+				opacity: 1;
 			}
 			.links .link iframe {
-				position: relative;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
+				display: block;
+				/* render at 2x and scale down so the preview reads as a thumbnail
+				   of the page rather than a zoomed-in crop of its top-left corner */
+				width: 200%;
+				height: 200%;
 				border: none;
-				visibility: hidden;
-				opacity: 0;
-				transition: opacity 0.5s ease;
-			}
-
-			.links .link.hovered iframe {
-			    visibility: visible; 
-			    opacity: 1;
+				transform: scale(0.5);
+				transform-origin: top left;
+				/* let clicks fall through to the card so the preview stays a preview */
+				pointer-events: none;
 			}
 			.text {
-				position: relative;
-				top: 0;
-				border: none;
-				display: block;
-				margin-top: 10px;
-				transition: .5s ease;
-			}
-			.text:hover {
-				top: 2px;
+				flex: 0 0 auto;
+				padding: 12px 14px 0;
+				box-sizing: border-box;
 			}
 			.text span {
-				margin-top: 30px;
-				margin-left: 10px;
+				display: block;
+				font-size: 15px;
 				font-weight: 300;
+				margin: 0 0 10px 0;
 			}
 			.text p {
+				margin: 0;
 				text-align: left;
+				font-family: "Roboto", sans-serif;
+				font-weight: 400;
+				font-size: 13.5px;
+				line-height: 1.45;
+			}
+			@media (max-width: 1000px) {
+				.links {
+					--card-w-open: 400px;
+					--card-h-open: 350px;
+					gap: 8px 16px;
+				}
+			}
+			@media (max-width: 560px) {
+				.links {
+					--card-w: calc(100vw - 48px);
+					--card-h: 200px;
+					--card-w-open: calc(100vw - 24px);
+					--card-h-open: 340px;
+					gap: 10px;
+				}
+			}
+			/* touch devices never un-hover, so do not reserve the open footprint */
+			@media (hover: none) {
+				.slot {
+					width: var(--card-w);
+					height: var(--card-h);
+				}
+			}
+			@media (prefers-reduced-motion: reduce) {
+				.links .link,
+				.preview {
+					transition: none;
+				}
 			}
 			canvas {
 				position: fixed;
@@ -213,31 +275,64 @@
 	</div>
 	
 	<div class="links">
-		<div class="link" data-url="/blog.html" onclick="location.href = '/blog.html';">
-			<div class="text">
-			<span>blog</span>
-			<p style="font-size: 14px;">a short-form blog where i post about anything. ranges from my own forays into technology and research, music and audio or even personal griping.</p>
+		<div class="slot">
+			<div class="link" role="link" tabindex="0" data-url="/blog.html">
+				<div class="text">
+					<span>blog</span>
+					<p>a short-form blog where i post about anything. ranges from my own forays into technology and research, music and audio or even personal griping.</p>
+				</div>
+				<div class="preview"></div>
 			</div>
 		</div>
-		<div class="link" data-url="/chess.html" onclick="location.href = '/chess.html';">
-			<div class="text">
-			<span>chess bot</span>
-			<p style="font-size: 14px;">a chess bot i trained with CNN and RNN neural network components. more recently adventured into LSTM and reinforcement learning for more tactical play. currently in training and under development.</p>
+		<div class="slot">
+			<div class="link" role="link" tabindex="0" data-url="/chess.html">
+				<div class="text">
+					<span>chess bot</span>
+					<p>a chess bot i trained with CNN and RNN neural network components. more recently adventured into LSTM and reinforcement learning for more tactical play. currently in training and under development.</p>
+				</div>
+				<div class="preview"></div>
+			</div>
+		</div>
+		<div class="slot">
+			<div class="link" role="link" tabindex="0" data-url="/spsc.html">
+				<div class="text">
+					<span>spsc queue</span>
+					<p>a bounded, lock-free single-producer / single-consumer ring queue in c++20. small buffer optimization, cache-line separated head and tail, acquire / release ordering. built for hot paths that cannot afford a mutex.</p>
+				</div>
+				<div class="preview"></div>
+			</div>
 		</div>
 	</div>
 	<script>
-		document.querySelectorAll('.links .link').forEach(link => {
-			link.addEventListener('mouseenter', () => {
-				if (!link.querySelector('iframe')) {
-				    const iframe = document.createElement('iframe');
-				    iframe.src = link.getAttribute('data-url');  
-				    link.appendChild(iframe); 
-				}
-				link.classList.add('hovered');
-			});
+		// preview iframes are built on first hover/focus only, and the slot --
+		// not the card -- is the trigger, so the target never moves under the
+		// pointer while the card animates open.
+		document.querySelectorAll('.links .slot').forEach(slot => {
+			const link = slot.querySelector('.link');
+			const preview = slot.querySelector('.preview');
+			const url = link.dataset.url;
+			let loaded = false;
 
-			link.addEventListener('mouseleave', () => {
-				link.classList.remove('hovered');
+			function loadPreview() {
+				if (loaded) return;
+				loaded = true;
+				const iframe = document.createElement('iframe');
+				iframe.src = url;
+				iframe.loading = 'lazy';
+				iframe.scrolling = 'no';
+				iframe.tabIndex = -1;
+				iframe.setAttribute('aria-hidden', 'true');
+				preview.appendChild(iframe);
+			}
+
+			slot.addEventListener('mouseenter', loadPreview);
+			slot.addEventListener('focusin', loadPreview);
+			link.addEventListener('click', () => { location.href = url; });
+			link.addEventListener('keydown', (event) => {
+				if (event.key === 'Enter' || event.key === ' ') {
+					event.preventDefault();
+					location.href = url;
+				}
 			});
 		});
 
