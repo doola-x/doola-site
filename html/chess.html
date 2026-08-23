@@ -8,6 +8,7 @@
 		<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 		<link rel="icon" type="image/png" href="/img/pawn.png" >
 		<title>doola:chess</title>
+		<script defer src="/js/particles.js"></script>
 		<link rel="stylesheet" href="/css/chessboard-1.0.0.min.css" />
 		<script src="/js/jquery-3.7.1.min.js"></script>
 		<script src="/js/chessboard-1.0.0.min.js"></script>
@@ -98,6 +99,8 @@
 			}
 			.blog {
 				border: 2px solid black;
+				/* let the particles drift behind the text without eating it */
+				background: rgba(255, 255, 255, 0.86);
 				border-radius:10px;
 				margin-top: 5px;
 				margin-left: 30px;
