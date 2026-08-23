@@ -139,26 +139,13 @@
 				padding-bottom: 10px;
 				border-bottom: 1px solid var(--rule);
 			}
-			.section p,
-			.section li {
+			.section p {
 				font-family: "Roboto", sans-serif;
 				font-weight: 300;
 				font-size: 15px;
 				line-height: 1.65;
 				color: #2b2f2a;
-			}
-			.section p {
 				margin: 0 0 12px;
-			}
-			.section ul {
-				margin: 0;
-				padding-left: 20px;
-			}
-			.section li {
-				margin: 0 0 10px;
-			}
-			.section li b {
-				font-weight: 500;
 			}
 			code.inl {
 				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -313,7 +300,7 @@
 			<div class="title">
 				<br>
 				<span class="blog-title">spsc queue</span>
-				<p>a bounded, lock-free single-producer / single-consumer ring queue in c++20. one writer, one reader, no mutex, no allocation on the hot path.</p>
+				<p>a bounded lock-free ring queue in c++20. one thread pushes, one thread pops, no mutex, no allocating once its running.</p>
 			</div>
 		</div>
 
@@ -328,38 +315,28 @@
 
 			<div class="section">
 				<h2>what it is</h2>
-				<p>a fixed-capacity ring buffer shared by exactly two threads: one that only pushes and one that only pops. that single constraint is what buys everything else. with one writer and one reader there is nothing to arbitrate, so the whole structure comes down to two counters and a pair of acquire / release fences &mdash; no locks, no CAS loop, no retry.</p>
-				<p>it is built for trading-style hot paths: pay for everything once, up front, then run <code class="inl">try_push</code> / <code class="inl">try_pop</code> in a tight loop where every operation is a bounds check, a placement new, and one atomic increment. both calls are non-blocking and return <code class="inl">false</code> instead of waiting &mdash; full is a valid answer, and so is empty.</p>
+				<p>a fixed size ring buffer shared by exactly two threads -- one that only pushes and one that only pops. that constraint is the whole trick. with a single writer and a single reader theres nothing to arbitrate, so the whole thing collapses down to two counters and a couple of acquire/release fences instead of a lock or a CAS retry loop.</p>
+				<p>everything gets paid for once at construction and then <code class="inl">try_push</code> / <code class="inl">try_pop</code> are just a bounds check, a placement new and an atomic increment. neither one blocks -- they hand back <code class="inl">false</code> when the queue is full or empty and let the caller decide what to do about it. this is well trodden ground and there are faster implementations out there, i mostly wanted to write one myself and be able to explain every line of it.</p>
 			</div>
 
 			<div class="section">
-				<h2>design notes</h2>
-				<ul>
-					<li><b>small buffer optimization.</b> capacity at or below <code class="inl">InlineCapacity</code> lives in an inline <code class="inl">std::byte</code> array right inside the object, so a small queue is one contiguous chunk of memory with no indirection and good locality. go past the threshold and it takes a single heap allocation at construction &mdash; never again after that.</li>
-					<li><b>raw storage, explicit lifetimes.</b> the buffer is untyped bytes, aligned with <code class="inl">alignas(T)</code>. elements are constructed in place with placement new and destroyed by an explicit destructor call on pop. nothing is default-constructed just to be overwritten later, which matters when <code class="inl">T</code> is something like a <code class="inl">std::function</code> task.</li>
-					<li><b>no false sharing.</b> <code class="inl">head_</code> and <code class="inl">tail_</code> are each <code class="inl">alignas(64)</code>, so the consumer's counter and the producer's counter land on separate cache lines. without that padding the two threads would ping-pong the same line back and forth and the lock-free version would lose to the mutex it was meant to beat.</li>
-					<li><b>monotonic counters, modulo indexing.</b> the counters only ever increase; occupancy is just <code class="inl">tail - head</code> and the slot is <code class="inl">(counter % capacity_) * sizeof(T)</code>. that removes the classic ambiguity where a full ring and an empty ring look identical, without burning a slot to distinguish them.</li>
-					<li><b>minimal ordering.</b> each side reads its own counter <code class="inl">relaxed</code> (nobody else writes it) and the other side's counter <code class="inl">acquire</code>. the increment that publishes the work is <code class="inl">release</code>. that pairing is exactly enough to guarantee the reader sees a fully constructed element before it sees the index that exposes it, and not one fence more.</li>
-					<li><b>push takes ownership late.</b> <code class="inl">try_push</code> checks for room before it moves from its argument, so a failed push on a full queue leaves the caller's value intact and never touches shared storage.</li>
-					<li><b>move, don't copy.</b> copy construction and copy assignment are deleted &mdash; copying a queue that another thread is writing into is not a meaningful operation. the move operations transfer the heap pointer and memcpy the inline bytes, and assume the source queue has been drained.</li>
-				</ul>
+				<h2>how it works</h2>
+				<p>the buffer is raw <code class="inl">std::byte</code> aligned to <code class="inl">T</code>. if the capacity fits under <code class="inl">InlineCapacity</code> it lives inline in the object itself, otherwise theres one heap allocation at construction and never another one after that. elements get built in place with placement new and torn down with an explicit destructor call on pop, so nothing is default constructed just to be overwritten a moment later -- which matters a lot when <code class="inl">T</code> is something like a <code class="inl">std::function</code>.</p>
+				<p><code class="inl">head_</code> and <code class="inl">tail_</code> only ever count up. occupancy is <code class="inl">tail - head</code>, the slot is <code class="inl">(counter % capacity_) * sizeof(T)</code>, and that sidesteps the usual full-looks-exactly-like-empty problem without burning a slot to fix it. both counters are <code class="inl">alignas(64)</code> so the producer and the consumer arent writing to the same cache line -- skip that padding and the two threads ping-pong the line back and forth and you give back most of what you came for.</p>
+				<p>the ordering is about as light as it gets. each side reads its own counter <code class="inl">relaxed</code> since nobody else writes it, reads the other sides counter <code class="inl">acquire</code>, and the increment that publishes the work is <code class="inl">release</code>. thats enough for the reader to see a fully constructed element before it sees the index that exposes it, and i couldnt talk myself into anything stronger.</p>
+				<p><code class="inl">try_push</code> checks for room before it moves out of its argument, so a failed push on a full queue leaves your value alone. copy construction and copy assignment are deleted, since copying a queue another thread is actively writing into isnt a coherent thing to ask for. the move operations are the sharp edge here -- they steal the heap pointer and memcpy the inline bytes, and they assume the source was already drained. move a queue with live elements in it and youll get exactly what you deserve.</p>
 			</div>
 
 			<div class="section">
 				<h2>benching it</h2>
-				<p><code class="inl">bench/bench_queue.cpp</code> moves ten million <code class="inl">uint64_t</code> values from a producer thread to the main thread and times the round trip, three ways:</p>
-				<ul>
-					<li><b>spsc::Queue</b> &mdash; producer spins on <code class="inl">try_push</code>, consumer spins on <code class="inl">try_pop</code>. no locks, no per-op allocation.</li>
-					<li><b>std::queue + mutex</b> &mdash; take the lock on every single push and pop.</li>
-					<li><b>std::queue + condvar</b> &mdash; same, plus a condition variable the consumer waits on, so you pay a syscall whenever it actually sleeps.</li>
-				</ul>
-				<p>each one runs twice to warm up before the timed pass, and <code class="inl">main()</code> prints elapsed seconds and millions of ops/sec side by side. numbers move around a lot between machines, so it is worth running yourself &mdash; <code class="inl">make bench</code>.</p>
+				<p><code class="inl">bench/bench_queue.cpp</code> shoves ten million <code class="inl">uint64_t</code>s from a producer thread over to the main thread three ways -- this queue, <code class="inl">std::queue</code> behind a mutex, and <code class="inl">std::queue</code> behind a mutex plus a condvar the consumer sleeps on. each runs twice to warm up before the timed pass and prints elapsed seconds next to millions of ops/sec.</p>
+				<p>im not posting numbers, because they swing hard between machines and this is a synthetic benchmark shaped about as favorably for a ring buffer as you could ask for. <code class="inl">make bench</code> and see what your box does.</p>
 			</div>
 
 			<div class="section">
 				<h2>the poc</h2>
-				<p><code class="inl">src/main.cpp</code> wraps the queue in something closer to how you would actually deploy it. a <code class="inl">QueuePool</code> placement-news a worst-case <code class="inl">Q_MAX</code> queues into one aligned buffer and hands them out through <code class="inl">acquire()</code> / <code class="inl">release()</code> against a simple free list &mdash; so a thread gets a queue without ever hitting the allocator. <code class="inl">release()</code> calls <code class="inl">reset()</code>, which destroys whatever is still in flight and rewinds both counters.</p>
-				<p>the payload is a <code class="inl">Task</code>: an id plus a <code class="inl">std::function</code> holding some simulated cpu work and a 25% chance of a microsecond sleep to stand in for i/o. the main thread pops and executes while the producer is still filling, so the ring runs up against its capacity and both sides genuinely contend &mdash; which is the point. in a real system this is the shape of a dispatcher: hand each worker a queue, keep the hot loop lock-free, and never allocate to move work around.</p>
+				<p><code class="inl">src/main.cpp</code> is closer to how youd actually use it. a <code class="inl">QueuePool</code> placement-news a worst case <code class="inl">Q_MAX</code> queues into one aligned buffer and hands them out through <code class="inl">acquire()</code> / <code class="inl">release()</code> off a free list, so a thread can get a queue without ever touching the allocator. <code class="inl">release()</code> calls <code class="inl">reset()</code>, which destroys whatever is still in flight and rewinds both counters.</p>
+				<p>the payload is a <code class="inl">Task</code> -- an id and a <code class="inl">std::function</code> doing some fake cpu work with a 25% chance of a microsecond sleep standing in for i/o. the main thread pops and executes while the producer is still filling, so the ring actually runs up against its capacity and both sides contend instead of politely taking turns. its a toy, but its the shape of a dispatcher: one queue per worker, hot loop stays lock free, nothing allocates just to move work around.</p>
 				<div class="files">
 					<div class="file">
 						<h3>include/spsc/queue.hpp</h3>
