@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" >
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+		<link rel="icon" type="image/png" href="/img/ico.png" >
+		<meta name="viewport" content="width=device-width, initial-scale=1" >
+		<meta name="description" content="bitcoin-watcher: a live kraken btc/usd order book on the desktop, in c# and avalonia." >
+		<title>doola:bitcoin</title>
+		<script defer src="/js/particles.js"></script>
+		<style>
+			:root {
+				--ink: #1c1e1b;
+				--muted: #5f6a5b;
+				--rule: #d8d6ce;
+				--moss: #748e66;
+				--ochre: #b2864a;
+				--clay: #965f3e;
+				--panel: #17191a;
+			}
+			body {
+				background: white;
+				overflow-x: hidden;
+				color: var(--ink);
+			}
+			.header {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: center;
+				overflow-x: hidden;
+			}
+			.home-button {
+				position: relative;
+				background: url('/img/guy2.png') no-repeat;
+				background-size: 100% 100%;
+				justify-content: center;
+				box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+				cursor: pointer;
+				border-top: none;
+				border-bottom: 3px solid rgba(0, 0, 0, 0.5);
+				border-radius: 10px;
+				width: 6.5rem;
+				height: 100px;
+				margin: 10px;
+				top: 0;
+				transition: top ease .5s;
+			}
+			.home-button:hover {
+				top: 1px;
+			}
+			.title {
+				position: relative;
+				width: 80%;
+				cursor: default;
+				background: #6dadeb;
+				opacity: 75%;
+				font-size: 100%;
+				border-top: none;
+				border-left: 3px solid rgba(0, 0, 0, 0.5);
+				border-bottom: 5px solid black;
+				border-radius: 10px;
+				min-height: 100px;
+				top: 0;
+				box-shadow: 0 0 14px rgba(116, 142, 102, 0.4);
+			}
+			.title p {
+				text-align: left;
+				font-family: "Roboto", sans-serif;
+				font-weight: 500;
+				font-size: 1em;
+				margin-block: 0;
+				margin-top: 10px;
+				margin-left: 10px;
+				padding-bottom: 10px;
+				padding-right: 10px;
+			}
+			.blog-title {
+				position: relative;
+				font-family: "Press Start 2P", system-ui;
+				font-weight: 400;
+				font-size: 18px;
+				padding: 10px;
+				top: 0;
+			}
+			.wrap {
+				max-width: 860px;
+				margin: 0 auto;
+				padding: 0 20px 80px;
+				box-sizing: border-box;
+			}
+			.meta {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: 8px;
+				margin: 26px 0 30px;
+				font-family: "Roboto", sans-serif;
+				font-size: 13px;
+				color: var(--muted);
+			}
+			.tag {
+				border: 1px solid var(--rule);
+				border-radius: 999px;
+				padding: 4px 11px;
+				background: #fbfbf9;
+			}
+			.repo-link {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				margin-left: auto;
+				padding: 7px 14px;
+				border: 2px solid var(--ink);
+				border-radius: 6px;
+				background: white;
+				color: var(--ink);
+				text-decoration: none;
+				font-family: "Press Start 2P", system-ui;
+				font-size: 10px;
+				box-shadow: 2px 2px 0 rgba(28, 30, 27, 0.85);
+				transition: transform .18s ease, box-shadow .18s ease;
+			}
+			.repo-link:hover {
+				transform: translate(2px, 2px);
+				box-shadow: 0 0 0 rgba(28, 30, 27, 0.85);
+			}
+			.section {
+				margin: 0 0 34px;
+				/* let the particles drift behind the text without eating it */
+				background: rgba(255, 255, 255, 0.86);
+				border-radius: 8px;
+				padding: 14px 18px;
+			}
+			.section h2 {
+				font-family: "Press Start 2P", system-ui;
+				font-size: 13px;
+				font-weight: 400;
+				letter-spacing: 0.5px;
+				margin: 0 0 14px;
+				padding-bottom: 10px;
+				border-bottom: 1px solid var(--rule);
+			}
+			.section p {
+				font-family: "Roboto", sans-serif;
+				font-weight: 300;
+				font-size: 15px;
+				line-height: 1.65;
+				color: #2b2f2a;
+				margin: 0 0 12px;
+			}
+			code.inl {
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 13px;
+				background: #f3f2ee;
+				border: 1px solid var(--rule);
+				border-radius: 3px;
+				padding: 1px 5px;
+			}
+			/* the pipeline strip -- socket to screen, left to right */
+			.flow {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: stretch;
+				gap: 6px;
+				margin: 4px 0 14px;
+			}
+			.hop {
+				flex: 1 1 120px;
+				border: 1px solid var(--rule);
+				border-top: 3px solid var(--moss);
+				border-radius: 4px;
+				padding: 9px 10px;
+				background: #fbfbf9;
+			}
+			.hop b {
+				display: block;
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 11.5px;
+				font-weight: 500;
+				color: var(--clay);
+				margin-bottom: 4px;
+			}
+			.hop span {
+				font-family: "Roboto", sans-serif;
+				font-weight: 300;
+				font-size: 12.5px;
+				line-height: 1.45;
+				color: #3a3f38;
+			}
+			.files {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+				gap: 12px;
+				margin-top: 6px;
+			}
+			.file {
+				border: 1px solid var(--rule);
+				border-left: 3px solid var(--moss);
+				border-radius: 4px;
+				padding: 12px 14px;
+				background: #fbfbf9;
+			}
+			.file.dim {
+				border-left-color: var(--ochre);
+				opacity: 0.8;
+			}
+			.file h3 {
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 12.5px;
+				font-weight: 500;
+				margin: 0 0 6px;
+				color: var(--clay);
+			}
+			.file p {
+				font-family: "Roboto", sans-serif;
+				font-weight: 300;
+				font-size: 13.5px;
+				line-height: 1.5;
+				margin: 0;
+				color: #3a3f38;
+			}
+
+			/* ---- embedded source ---- */
+			.source {
+				border: 1px solid #24282a;
+				border-radius: 8px;
+				overflow: hidden;
+				background: var(--panel);
+				box-shadow: 0 10px 30px rgba(28, 30, 27, 0.18);
+			}
+			.source-bar {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				padding: 10px 14px;
+				background: #1e2223;
+				border-bottom: 1px solid #2b3032;
+			}
+			.source-bar .path {
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 12.5px;
+				color: #9aa398;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			.source-bar .spacer { margin-left: auto; }
+			.source-bar button,
+			.source-bar a {
+				font-family: "Roboto", sans-serif;
+				font-size: 12px;
+				color: #b9c0b3;
+				background: transparent;
+				border: 1px solid #363c3d;
+				border-radius: 4px;
+				padding: 4px 10px;
+				cursor: pointer;
+				text-decoration: none;
+				transition: background .2s ease, color .2s ease, border-color .2s ease;
+			}
+			.source-bar button:hover,
+			.source-bar a:hover {
+				background: #262b2c;
+				color: #e4e2da;
+				border-color: #4a5150;
+			}
+			.code {
+				margin: 0;
+				padding: 14px 0;
+				overflow-x: auto;
+				font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+				font-size: 12.5px;
+				line-height: 1.65;
+				tab-size: 4;
+				-moz-tab-size: 4;
+				color: #d9d7d0;
+				white-space: pre;
+			}
+			.code code {
+				font: inherit;
+			}
+			.cl {
+				display: flex;
+				min-width: max-content;
+			}
+			.cl:hover {
+				background: #1d2122;
+			}
+			.gut {
+				position: sticky;
+				left: 0;
+				flex: 0 0 auto;
+				width: 3.2em;
+				padding-right: 14px;
+				text-align: right;
+				color: #4d554e;
+				background: var(--panel);
+				user-select: none;
+				-webkit-user-select: none;
+			}
+			.cl:hover .gut {
+				color: #7e887d;
+			}
+			.src {
+				flex: 1 1 auto;
+				padding-right: 24px;
+				white-space: pre;
+			}
+			.t-cmt  { color: #67735f; font-style: italic; }
+			.t-pp   { color: #b0563f; }
+			.t-kw   { color: #b2864a; }
+			.t-ty   { color: #8fa47c; }
+			.t-num,
+			.t-str  { color: #b07a5c; }
+			.t-fn   { color: #c8c3b4; }
+			.t-pun  { color: #868d84; }
+			.note {
+				font-family: "Roboto", sans-serif;
+				font-weight: 300;
+				font-size: 13px;
+				color: var(--muted);
+				margin-top: 10px;
+			}
+			.note a { color: var(--clay); }
+			@media (max-width: 600px) {
+				.wrap { padding: 0 12px 50px; }
+				.repo-link { margin-left: 0; }
+				.code { font-size: 11.5px; }
+				.gut { width: 2.6em; padding-right: 10px; }
+			}
+		</style>
+	</head>
+	<body>
+		<div class="header">
+			<div class="home-button" onclick="location.href = '/home.html';"></div>
+			<div class="title">
+				<br>
+				<span class="blog-title">bitcoin watcher</span>
+				<p>a live kraken order book on the desktop. c# and avalonia, one websocket, ten price levels a side, redrawn ten times a second.</p>
+			</div>
+		</div>
+
+		<div class="wrap">
+			<div class="meta">
+				<span class="tag">c# / .net 10</span>
+				<span class="tag">avalonia</span>
+				<span class="tag">websocket</span>
+				<span class="tag">channels</span>
+				<a class="repo-link" href="https://github.com/doola-x/bitcoin-watcher/tree/main" target="_blank" rel="noopener">github &#8599;</a>
+			</div>
+
+			<div class="section">
+				<h2>what it is</h2>
+				<p>a desktop window showing kraken's btc/usd book in real time. bids down the left, asks down the right, ten levels on each side, and a row flashes green or red for a third of a second when its size moves. thats the whole product. about 850 lines behind it.</p>
+				<p>the part i was actually curious about was how little i could lean on. avalonia draws the window and thats the extent of the framework -- no reactiveui, no mvvm toolkit, no di container, <code class="inl">INotifyPropertyChanged</code> written out by hand. the book is two dictionaries and everything between the socket and the screen is <code class="inl">System.Threading.Channels</code>. a market data feed is a producer/consumer problem wearing a ui, and i wanted the seams where one hands off to the other to stay visible instead of disappearing into a library.</p>
+			</div>
+
+			<div class="section">
+				<h2>how it flows</h2>
+				<div class="flow">
+					<div class="hop"><b>ClientWebSocket</b><span>frames in, reassembled until EndOfMessage</span></div>
+					<div class="hop"><b>KrakenParse</b><span>utf8 span to a concrete record</span></div>
+					<div class="hop"><b>inbox channel</b><span>unbounded, single writer</span></div>
+					<div class="hop"><b>OrderBookStream</b><span>channel to .net events</span></div>
+					<div class="hop"><b>ViewModel</b><span>queue, drained at 10hz</span></div>
+				</div>
+				<p>five hops, one direction, and every boundary is either a channel or an event. nothing reaches back upstream. the socket does not know a window exists and the viewmodel does not know what a websocket is -- the stream in the middle is the only thing holding both ideas at once, and it is sixty lines.</p>
+				<p><code class="inl">KrakenParse</code> does not deserialize into a polymorphic base. it parses the document, looks for a <code class="inl">method</code> property to spot a subscription ack or a <code class="inl">channel</code> property to spot data, and then deserializes the whole root into the concrete record. heartbeat and status frames come back null and never make it onto the channel at all. its a sniff rather than a schema, which i would not do against a big api, but the v2 book feed is four message shapes and pretending otherwise would have been ceremony.</p>
+			</div>
+
+			<div class="section">
+				<h2>the socket</h2>
+				<p><code class="inl">ProcessAsync</code> is a reconnect loop with a socket inside it, not a socket with reconnect bolted onto the side. each pass builds a fresh <code class="inl">ClientWebSocket</code>, connects, subscribes, and starts two loops over a linked cancellation token -- one draining the outbox onto the wire, one reading frames off it. <code class="inl">Task.WhenAny</code> means whichever one dies first cancels the token out from under the other, and the <code class="inl">WhenAll</code> after it waits for that other one to actually finish before the loop comes back around. no orphaned reader still writing into a socket thats already gone.</p>
+				<p>a fault just falls out the bottom into the backoff: 500ms doubling up to a 30 second ceiling, multiplied by a random factor between 0.5 and 1.5. the jitter is there because the failure that knocks you off is usually the exchange, and every client it knocked off is holding the same doubling schedule you are.</p>
+				<p>the read loop rents 16k out of <code class="inl">ArrayPool</code> and accumulates into an <code class="inl">ArrayBufferWriter</code> until <code class="inl">EndOfMessage</code>, since a full depth snapshot does not arrive in one receive. parsing runs straight off the accumulated <code class="inl">ReadOnlySpan&lt;byte&gt;</code> with a <code class="inl">Utf8JsonReader</code> -- no intermediate string, nothing copied to be thrown away. a frame that fails to parse gets logged and dropped rather than thrown, because the read loop is the only thing keeping the window alive and one malformed byte from a venue i dont control should not be able to end it.</p>
+				<p>the outbox is bounded at 64 with <code class="inl">DropOldest</code>. subscribe messages are small and rare, so if that ever backs up something has gone badly wrong somewhere else and the newest message is the one worth keeping.</p>
+			</div>
+
+			<div class="section">
+				<h2>keeping the ui honest</h2>
+				<p>the socket can deliver several updates inside one frame and several frames inside one animation interval. binding straight to it means the ui thread doing layout work that gets overwritten before a human could have seen it. so the viewmodel does not render on arrival -- updates land in a <code class="inl">ConcurrentQueue</code> and a <code class="inl">DispatcherTimer</code> drains all of it every 100ms and redraws once. bursts collapse into one redraw for free.</p>
+				<p>kraken sends deltas and a level with quantity zero means remove it. apply that to the two dictionaries, sort, take the top ten a side, then hand the result to <code class="inl">Reconcile</code>. reconcile is the piece i actually care about: it matches incoming levels against the row objects already on screen by price and reuses them instead of allocating new ones. a row that survives keeps its flash timer, so a price level thats been ticking for thirty seconds doesnt restart its animation every hundred milliseconds, and the collection only gets cleared and rebuilt when the top ten genuinely changed.</p>
+				<p>the flash is versioned for the same reason. every <code class="inl">Update</code> bumps a counter and schedules a clear 350ms out, and that clear only fires if its version is still the newest. skip that and two updates 50ms apart leave the row dark 300ms early -- which reads on screen as the book going quiet exactly when it got busy, the opposite of what you want the animation to tell you.</p>
+			</div>
+
+			<div class="section">
+				<h2>whats not finished</h2>
+				<p>theres a second path in the repo that the app never calls. <code class="inl">Observers/KrakenObserver.cs</code> signs a rest request with hmac-sha512 to get a websocket token, opens its own connection, and builds the book out of <code class="inl">TracedConcurrentDictionary</code> -- a dictionary that mirrors every add, update and delete into a bounded channel with a sequence number and a <code class="inl">Stopwatch</code> timestamp. thats the version i want, because it gives you a mutation log for free: the flash animation stops being a diff between two renders and becomes a read of what the book actually did. but <code class="inl">App.axaml.cs</code> starts <code class="inl">KrakenOrderBookStream</code> and nothing else, so today its dead code with a good idea sitting in it.</p>
+				<p>its also wrong as written. the update branch calls <code class="inl">TryAdd</code>, which returns false and does nothing when the key is already there, so a level that changes size never changes and a level that goes to zero never leaves. the snapshot populates correctly and then every delta after it is a no-op. the path in <code class="inl">Services/</code> handles deltas properly, which is the only reason the window looks right.</p>
+				<p>two more gaps worth naming. <code class="inl">BookData</code> parses kraken's crc32 checksum and nothing verifies it -- that checksum is the real correctness check for a book you are maintaining from deltas, and without it you discover youve drifted by staring at the screen and feeling like something is off. and the viewmodel already computes <code class="inl">BestBid</code>, <code class="inl">BestAsk</code>, <code class="inl">Spread</code> and a connection <code class="inl">Status</code> that <code class="inl">MainWindow.axaml</code> never binds to, so the window cannot tell you whether its live or quietly disconnected. the reconnect loop is the piece of this i trust most and the ui gives you no way to watch it work.</p>
+			</div>
+
+			<div class="section">
+				<h2>the files</h2>
+				<div class="files">
+					<div class="file">
+						<h3>WS/Kraken/KrakenWebSocket.cs</h3>
+						<p>connect, subscribe, read, reconnect. the only thing here that touches the network.</p>
+					</div>
+					<div class="file">
+						<h3>WS/Kraken/KrakenParse.cs</h3>
+						<p>sniffs the json root and picks a record. drops what it doesnt know.</p>
+					</div>
+					<div class="file">
+						<h3>WS/Kraken/KrakenMessages.cs</h3>
+						<p>the wire types as records. snake_case policy, checksum kept unsigned.</p>
+					</div>
+					<div class="file">
+						<h3>Services/KrakenOrderBookStream.cs</h3>
+						<p>channel to events. the only file that knows about both halves.</p>
+					</div>
+					<div class="file">
+						<h3>ViewModels/OrderBookViewModel.cs</h3>
+						<p>book state, 10hz coalescing, row reconcile and the flash timers.</p>
+					</div>
+					<div class="file">
+						<h3>MainWindow.axaml</h3>
+						<p>two cards, bids and asks, monospace and right aligned sizes.</p>
+					</div>
+					<div class="file dim">
+						<h3>Objects/TracedConcurrentDictionary.cs</h3>
+						<p>a dictionary that emits a sequenced mutation log. built, not wired in.</p>
+					</div>
+					<div class="file dim">
+						<h3>Observers/Implementations/KrakenObserver.cs</h3>
+						<p>the authenticated path. signs for a token, then never gets started.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="section">
+				<h2>the source</h2>
+				<div class="source">
+					<div class="source-bar">
+						<span class="path">WS/Kraken/KrakenWebSocket.cs</span>
+						<span class="spacer"></span>
+						<button id="copy" type="button">copy</button>
+						<a href="https://github.com/doola-x/bitcoin-watcher/blob/main/WS/Kraken/KrakenWebSocket.cs" target="_blank" rel="noopener">raw &#8599;</a>
+					</div>
+					<pre class="code" id="code"><code>using System.Buffers;
+using System.Net.WebSockets;
+using System.Text.Json;
+using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+using WS.Messages;
+
+namespace WS;
+///
+/// Kraken WebSocket
+/// outbox / inbox channels, 
+/// 
+public sealed class KrakenWebSocket : IAsyncDisposable
+{
+    private readonly ILogger _logger;
+    private readonly Channel&lt;string&gt; _outbox;
+    private readonly Channel&lt;object&gt; _inbox;
+    public ChannelReader&lt;object&gt; Messages { get; }
+    private ClientWebSocket? _ws;
+    private DateTimeOffset _lastFrame;
+    private readonly Uri _publicDataWSPath = new("wss://ws.kraken.com/v2");
+
+    public KrakenWebSocket(ILogger logger) {
+        _logger = logger;
+        _outbox = Channel.CreateBounded&lt;string&gt;(new BoundedChannelOptions(64) 
+        { 
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.DropOldest
+        });
+        _inbox = Channel.CreateUnbounded&lt;object&gt;(new UnboundedChannelOptions{ SingleWriter = true });
+        Messages = _inbox.Reader;
+        _lastFrame = DateTimeOffset.UtcNow;
+    }
+
+    public ValueTask SubscribeAsync(IReadOnlyList&lt;string&gt; symbols, int depth, CancellationToken ct) {
+        var req = new SubscribeRequest(new BookSubscribeParams(symbols, depth));
+        var msg = JsonSerializer.Serialize(req, KrakenJson.Options);
+        return _outbox.Writer.WriteAsync(msg, ct);
+    }
+
+    public async Task ReadAsync(ClientWebSocket ws, CancellationToken ct) {
+        var buff = ArrayPool&lt;byte&gt;.Shared.Rent(16 * 1024);
+        var accum = new ArrayBufferWriter&lt;byte&gt;(16 * 1024);
+        try
+        {
+            while (!ct.IsCancellationRequested &amp;&amp; ws.State == WebSocketState.Open) {
+                ValueWebSocketReceiveResult result;
+                accum.Clear();
+                do {
+                    result = await ws.ReceiveAsync(buff.AsMemory(), ct);
+                    if (result.MessageType == WebSocketMessageType.Close) {
+                        _logger.LogWarning("Warning: connection closed.");
+                        return;
+                    }
+
+                    accum.Write(buff.AsSpan(0, result.Count));
+                } while (!result.EndOfMessage);
+                _lastFrame = DateTime.UtcNow;
+
+                try
+                {
+                    if (KrakenParse.Parse(accum.WrittenSpan) is { } msg)
+                        await _inbox.Writer.WriteAsync(msg, ct);
+                } 
+                catch (JsonException ex) {
+                    _logger.LogWarning(ex, "Unparsable frame, dropped.");
+                }
+            }
+        }
+        finally { ArrayPool&lt;byte&gt;.Shared.Return(buff, true); }
+    }
+    private async Task WriteLoopAsync(ClientWebSocket ws, CancellationToken ct)
+    {
+        await foreach (var json in _outbox.Reader.ReadAllAsync(ct))
+        {
+            await ws.SendAsync(System.Text.Encoding.UTF8.GetBytes(json),
+                               WebSocketMessageType.Text, endOfMessage: true, ct);
+        }
+    }
+
+    public async Task ProcessAsync(IReadOnlyList&lt;string&gt; symbols, CancellationToken ct) {
+        int attempt = 0;
+        while (!ct.IsCancellationRequested) {
+            try {
+                // create a new web socket connection 
+                using var ws = new ClientWebSocket();
+                await ws.ConnectAsync(_publicDataWSPath, ct);
+                _ws = ws;
+                _lastFrame = DateTime.UtcNow;
+                attempt = 0;
+
+                _logger.LogInformation("websocket connected");
+                _logger.LogInformation($"subscribing with symbols {string.Join(',', symbols.Select(s =&gt; s))}");
+                await SubscribeAsync(symbols, 10, ct);
+
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                var reader = ReadAsync(ws, linked.Token);
+                var writer = WriteLoopAsync(ws, linked.Token);
+ 
+                // whichever faults first tears the others down. no orphaned loops.
+                await Task.WhenAny(reader, writer);
+                linked.Cancel();
+                await Task.WhenAll(
+                    reader.ContinueWith(_ =&gt; { }, TaskScheduler.Default),
+                    writer.ContinueWith(_ =&gt; { }, TaskScheduler.Default));
+
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "socket faulted");
+            }
+
+            var delay = TimeSpan.FromMilliseconds(
+                Math.Min(30_000, 500 * Math.Pow(2, attempt++)) * (0.5 + Random.Shared.NextDouble()));
+            _logger.LogInformation($"reconnecting in {delay}");
+
+            await Task.Delay(delay, ct);
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        _outbox.Writer.TryComplete();
+        if (_ws?.State == WebSocketState.Open )
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            try { await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", cts.Token); }
+            catch { /* already gone; nothing to salvage */ }
+        }
+        _ws?.Dispose();
+    }
+}</code></pre>
+				</div>
+				<p class="note">mirrored from <a href="https://github.com/doola-x/bitcoin-watcher/blob/main/WS/Kraken/KrakenWebSocket.cs" target="_blank" rel="noopener">doola-x/bitcoin-watcher</a>.</p>
+			</div>
+		</div>
+
+		<script>
+			// line-scoped c# tokenizer. every block comment in this file opens and
+			// closes on one line, so nothing needs to carry state across a newline --
+			// but a url like wss://host does live inside a string, so the comment
+			// scan has to walk the line rather than just indexOf('//').
+			const KEYWORDS = new Set([
+				'async', 'await', 'bool', 'byte', 'case', 'catch', 'class', 'const',
+				'decimal', 'default', 'else', 'false', 'finally', 'for', 'foreach',
+				'get', 'if', 'in', 'int', 'internal', 'is', 'namespace', 'new', 'null',
+				'out', 'override', 'private', 'public', 'readonly', 'record', 'ref',
+				'return', 'sealed', 'set', 'static', 'string', 'struct', 'switch',
+				'this', 'throw', 'true', 'try', 'uint', 'using', 'var', 'void',
+				'when', 'while'
+			]);
+			const TYPES = new Set([
+				'ArrayBufferWriter', 'ArrayPool', 'BookSubscribeParams', 'BoundedChannelFullMode',
+				'BoundedChannelOptions', 'CancellationToken', 'CancellationTokenSource', 'Channel',
+				'ChannelReader', 'ClientWebSocket', 'DateTime', 'DateTimeOffset', 'Encoding',
+				'Exception', 'IAsyncDisposable', 'ILogger', 'IReadOnlyList', 'JsonException',
+				'JsonSerializer', 'KrakenJson', 'KrakenParse', 'KrakenWebSocket', 'Math',
+				'OperationCanceledException', 'Random', 'SubscribeRequest', 'System', 'Task',
+				'TaskScheduler', 'TimeSpan', 'UnboundedChannelOptions', 'Uri', 'ValueTask',
+				'ValueWebSocketReceiveResult', 'WS', 'WebSocketCloseStatus', 'WebSocketMessageType',
+				'WebSocketState'
+			]);
+
+			function esc(text) {
+				return text.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]);
+			}
+
+			function span(cls, text) {
+				return '<span class="t-' + cls + '">' + esc(text) + '</span>';
+			}
+
+			function highlightCode(text) {
+				let out = '';
+				const re = /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b0[xX][0-9a-fA-F]+\b|\b\d[\d_']*(?:\.\d+)?\b)|([A-Za-z_]\w*)|([{}()\[\];,.:<>=+\-*\/%&|!~?@$]+)/g;
+				let last = 0;
+				let match;
+				while ((match = re.exec(text)) !== null) {
+					out += esc(text.slice(last, match.index));
+					last = re.lastIndex;
+					if (match[1]) {
+						out += span('str', match[1]);
+					} else if (match[2]) {
+						out += span('num', match[2]);
+					} else if (match[3]) {
+						const word = match[3];
+						if (KEYWORDS.has(word)) out += span('kw', word);
+						else if (TYPES.has(word)) out += span('ty', word);
+						else if (text[re.lastIndex] === '(') out += span('fn', word);
+						else out += esc(word);
+					} else {
+						out += span('pun', match[4]);
+					}
+				}
+				return out + esc(text.slice(last));
+			}
+
+			// index of the first comment opener that is not inside a string literal,
+			// or -1. keeps "wss://..." from swallowing the rest of its line.
+			function commentAt(line) {
+				let quote = null;
+				for (let i = 0; i < line.length; i++) {
+					const ch = line[i];
+					if (quote) {
+						if (ch === '\\') { i++; continue; }
+						if (ch === quote) quote = null;
+						continue;
+					}
+					if (ch === '"' || ch === "'") { quote = ch; continue; }
+					if (ch === '/' && (line[i + 1] === '/' || line[i + 1] === '*')) return i;
+				}
+				return -1;
+			}
+
+			function highlightLine(line) {
+				const at = commentAt(line);
+				if (at === -1) return highlightCode(line);
+				if (line[at + 1] === '/') {
+					return highlightCode(line.slice(0, at)) + span('cmt', line.slice(at));
+				}
+				const close = line.indexOf('*/', at + 2);
+				const stop = close === -1 ? line.length : close + 2;
+				return highlightCode(line.slice(0, at)) +
+					span('cmt', line.slice(at, stop)) +
+					highlightLine(line.slice(stop));
+			}
+
+			const pre = document.getElementById('code');
+			const source = pre.textContent.replace(/\n$/, '');
+			pre.innerHTML = source.split('\n').map((line, i) =>
+				'<div class="cl"><span class="gut">' + (i + 1) + '</span>' +
+				'<span class="src">' + (highlightLine(line) || '\u200b') + '</span></div>'
+			).join('');
+
+			const copyButton = document.getElementById('copy');
+			copyButton.addEventListener('click', async () => {
+				try {
+					await navigator.clipboard.writeText(source);
+					copyButton.textContent = 'copied';
+				} catch (err) {
+					copyButton.textContent = 'ctrl+c';
+				}
+				setTimeout(() => { copyButton.textContent = 'copy'; }, 1600);
+			});
+		</script>
+	</body>
+</html>

@@ -14,7 +14,7 @@ require('./server');
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const BASE = `http://localhost:${process.env.PORT || 8732}`;
-const PAGES = ['/home.html', '/blog.html', '/chess.html'];
+const PAGES = ['/home.html', '/blog.html', '/chess.html', '/spsc.html', '/bitcoin.html'];
 const VIEWPORTS = [
 	{ name: 'iphone-se', width: 375, height: 667, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
 	{ name: 'iphone-14', width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
