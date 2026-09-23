@@ -7,7 +7,7 @@
 	if (window.self !== window.top) return;
 
 	const style = document.createElement('style');
-	style.textContent = '#particle-canvas{position:fixed;top:0;left:0;background:white;display:block;z-index:-1;overflow:hidden;}';
+	style.textContent = '#particle-canvas{position:fixed;top:0;left:0;background:var(--dk-bg,white);display:block;z-index:-1;overflow:hidden;}';
 	document.head.appendChild(style);
 
 	let canvas = document.getElementById('particle-canvas');
@@ -17,6 +17,21 @@
 		document.body.insertBefore(canvas, document.body.firstChild);
 	}
 	const ctx = canvas.getContext('2d');
+
+	// the ground the field sits on. theme.js swaps --dk-bg underneath us, so
+	// read it once and re-read on the flip instead of every frame.
+	let bg = 'white';
+	let bgFade = 'rgba(255, 255, 255, 0.3)';
+	function readTheme() {
+		const style = getComputedStyle(document.documentElement);
+		bg = style.getPropertyValue('--dk-bg').trim() || 'white';
+		bgFade = style.getPropertyValue('--dk-bg-fade').trim() || 'rgba(255, 255, 255, 0.3)';
+	}
+	readTheme();
+	window.addEventListener('themechange', () => {
+		readTheme();
+		if (!running) drawStatic(); // a still field would otherwise keep the old ground
+	});
 	function resizeCanvas() {
 		canvas.width = window.innerWidth;
 		canvas.height = window.innerHeight;
@@ -193,7 +208,7 @@
 	}
 
 	function drawStatic() {
-		ctx.fillStyle = 'white';
+		ctx.fillStyle = bg;
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		particles.forEach(p => p.draw(Math.sin(p.angle)));
 	}
@@ -201,7 +216,7 @@
 	function animate() {
 		if (!running) return;
 		// translucent wipe instead of a clear, so particles leave trails
-		ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+		ctx.fillStyle = bgFade;
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		// compact in place: drop off-screen particles without allocating a new array
 		let w = 0;

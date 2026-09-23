@@ -1,0 +1,170 @@
+/* site-wide light/dark theme.
+   the toggle in the top left writes html[data-theme] (see /js/theme.js); every
+   rule below is scoped to the dark value, so light stays exactly as authored.
+   tokens are --dk-* prefixed so they never collide with a page's own vars. */
+
+:root {
+	/* particles.js reads these for the canvas ground and its trail wipe */
+	--dk-bg: #ffffff;
+	--dk-bg-fade: rgba(255, 255, 255, 0.3);
+}
+
+html[data-theme="dark"] {
+	--dk-bg: #121310;
+	--dk-bg-fade: rgba(18, 19, 16, 0.3);
+	--dk-panel: #1b1e19;
+	--dk-panel-soft: rgba(27, 30, 25, 0.9);
+	--dk-line: #3f453a;
+	--dk-line-soft: rgba(228, 226, 218, 0.25);
+	--dk-text: #e4e2da;
+	--dk-sky: #2b4e70;
+
+	/* spsc / bitcoin author their palette as vars -- retint in place.
+	   html[data-theme] outspecifies their :root regardless of load order. */
+	--ink: #e4e2da;
+	--muted: #9aa398;
+	--rule: #3f453a;
+	--moss: #8fa47c;
+	--ochre: #c39a5c;
+	--clay: #c98a63;
+}
+
+/* ---- the toggle itself ------------------------------------------------- */
+#theme-toggle {
+	position: fixed;
+	top: calc(8px + env(safe-area-inset-top, 0px));
+	left: 8px;
+	z-index: 200;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 0;
+	cursor: pointer;
+	border: 2px solid rgba(0, 0, 0, 0.55);
+	border-radius: 5px;
+	background: rgba(255, 255, 255, 0.85);
+	color: #1c1e1b;
+	box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.35);
+	transition: background .25s ease, color .25s ease, border-color .25s ease, transform .15s ease;
+}
+#theme-toggle:hover {
+	transform: translate(1px, 1px);
+}
+#theme-toggle:focus-visible {
+	outline: 2px solid rgba(196, 59, 40, 0.8);
+	outline-offset: 2px;
+}
+#theme-toggle svg {
+	width: 14px;
+	height: 14px;
+	display: block;
+}
+/* light shows the moon you are heading toward, dark shows the sun */
+#theme-toggle .sun { display: none; }
+html[data-theme="dark"] #theme-toggle {
+	border-color: var(--dk-line);
+	background: var(--dk-panel);
+	color: var(--dk-text);
+	box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+}
+html[data-theme="dark"] #theme-toggle .sun { display: block; }
+html[data-theme="dark"] #theme-toggle .moon { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+	#theme-toggle { transition: none; }
+}
+
+/* ---- shared chrome ----------------------------------------------------- */
+html[data-theme="dark"] body {
+	background: var(--dk-bg);
+	color: var(--dk-text);
+	transition: background-color .25s ease, color .25s ease;
+}
+html[data-theme="dark"] a {
+	color: var(--clay);
+}
+html[data-theme="dark"] .title {
+	background: var(--dk-sky);
+	border-left-color: var(--dk-line-soft);
+	border-bottom-color: var(--dk-line);
+	box-shadow: 0 0 14px rgba(143, 164, 124, 0.25);
+}
+html[data-theme="dark"] .home-button {
+	border-bottom-color: var(--dk-line-soft);
+	box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- home -------------------------------------------------------------- */
+html[data-theme="dark"] .links .link {
+	background: var(--dk-panel);
+	border-color: var(--dk-line);
+	box-shadow: 0 0 14px rgba(150, 95, 62, 0.28);
+}
+html[data-theme="dark"] .slot:hover .link,
+html[data-theme="dark"] .slot:focus-within .link {
+	box-shadow: 0 0 22px rgba(150, 95, 62, 0.45);
+}
+html[data-theme="dark"] .dropdown,
+html[data-theme="dark"] .dropdown-pointer {
+	background: var(--dk-sky);
+	border-color: var(--dk-line);
+}
+
+/* ---- blog / chess ------------------------------------------------------ */
+html[data-theme="dark"] .blog {
+	background: var(--dk-panel-soft);
+	border-color: var(--dk-line);
+}
+html[data-theme="dark"] .blog:hover {
+	border-color: var(--dk-text);
+}
+html[data-theme="dark"] .filter-menu {
+	border-color: var(--dk-line);
+	box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.7);
+}
+html[data-theme="dark"] .filter-button {
+	background: var(--dk-panel);
+	border-color: var(--dk-line);
+}
+html[data-theme="dark"] .filter-button:hover {
+	background: #46503f;
+}
+html[data-theme="dark"] .button-active {
+	background: #55604c;
+}
+html[data-theme="dark"] .resigns {
+	background: var(--dk-panel);
+	border-color: var(--dk-line);
+	color: var(--dk-text);
+}
+
+/* ---- spsc / bitcoin ---------------------------------------------------- */
+html[data-theme="dark"] .section {
+	background: var(--dk-panel-soft);
+}
+html[data-theme="dark"] .section p {
+	color: var(--dk-text);
+}
+html[data-theme="dark"] .tag,
+html[data-theme="dark"] .file,
+html[data-theme="dark"] .hop {
+	background: #16180f;
+}
+html[data-theme="dark"] .file p,
+html[data-theme="dark"] .hop span {
+	color: #c6c4bb;
+}
+html[data-theme="dark"] .repo-link {
+	background: var(--dk-panel);
+	box-shadow: 2px 2px 0 rgba(228, 226, 218, 0.6);
+}
+html[data-theme="dark"] .repo-link:hover {
+	box-shadow: 0 0 0 rgba(228, 226, 218, 0.6);
+}
+html[data-theme="dark"] code.inl {
+	background: #1f231c;
+}
