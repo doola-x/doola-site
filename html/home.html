@@ -138,9 +138,13 @@
 				z-index: 12;
 			}
 			/* scattered: cards drift under js-driven transforms. the slot stops taking
-			   the pointer so a drifting card can't expand or navigate under it. */
+			   the pointer (it stays put at home) but the card itself still does, so
+			   hovering a drifting card expands it exactly like it does at rest. */
 			.links.scattered .slot {
 				pointer-events: none;
+			}
+			.links.scattered .link {
+				pointer-events: auto;
 			}
 			.links .link.snapping {
 				transition: transform .6s cubic-bezier(.22, .61, .36, 1),
@@ -356,67 +360,102 @@
 		// viewport, bumping off the walls and each other. click 2: snap home.
 		// slow on purpose (tens of px/s) so it stays cheap on weak clients.
 		const links = document.querySelector('.links');
-		const cards = Array.from(links.querySelectorAll('.link')).map(el => ({
-			el, w: 0, h: 0, hx: 0, hy: 0, x: 0, y: 0, vx: 0, vy: 0,
-		}));
+		// px/py are the card's centre in page coords, hcx/hcy its slot's centre (home).
+		// cards are centred in their slots, so tracking centres means the hover
+		// expand grows around the same point and never shifts the card.
+		const cards = Array.from(links.querySelectorAll('.link')).map(el => {
+			const c = { el, w: 0, h: 0, hcx: 0, hcy: 0, px: 0, py: 0, vx: 0, vy: 0, hover: false, focus: false };
+			el.addEventListener('pointerenter', () => { c.hover = true; });
+			el.addEventListener('pointerleave', () => { c.hover = false; });
+			el.addEventListener('focusin', () => { c.focus = true; });
+			el.addEventListener('focusout', () => { c.focus = false; });
+			return c;
+		});
 		const MIN_SPEED = 40, MAX_SPEED = 70; // px/s while roaming
 		const ENTER_SPEED = 120;              // px/s for a card that starts off-screen
+		const PUSH_SPEED = 160;               // px/s a card is shoved clear of a frozen one
 		let phase = 'home'; // home | roaming | snapping
 		let lastT = 0;
 
-		// home = where the card sits with no transform. cx/cy are the offsets currently applied.
 		function measureHomes() {
 			for (const c of cards) {
-				const r = c.el.getBoundingClientRect();
+				const r = c.el.getBoundingClientRect(); // includes any current transform
+				const ox = c.px - c.hcx, oy = c.py - c.hcy; // offset that transform applies
 				c.w = r.width;
 				c.h = r.height;
-				c.hx = r.left + scrollX - (c.x - c.hx);
-				c.hy = r.top + scrollY - (c.y - c.hy);
+				c.hcx = r.left + r.width / 2 + scrollX - ox;
+				c.hcy = r.top + r.height / 2 + scrollY - oy;
 			}
 		}
 
 		function stepPhysics(dt) {
-			const minX = scrollX, minY = scrollY;
+			// reads first, writes last, so the whole step costs one layout
+			for (const c of cards) {
+				c.w = c.el.offsetWidth; // animated size while a card expands or shrinks
+				c.h = c.el.offsetHeight;
+				c.frozen = c.hover || c.focus;
+			}
 			const vw = document.documentElement.clientWidth;
 			const vh = document.documentElement.clientHeight;
 			for (const c of cards) {
-				c.x += c.vx * dt;
-				c.y += c.vy * dt;
-				const maxX = Math.max(minX, scrollX + vw - c.w);
-				const maxY = Math.max(minY, scrollY + vh - c.h);
+				if (!c.frozen) {
+					c.px += c.vx * dt;
+					c.py += c.vy * dt;
+				}
+				const minX = scrollX + c.w / 2, minY = scrollY + c.h / 2;
+				const maxX = Math.max(minX, scrollX + vw - c.w / 2);
+				const maxY = Math.max(minY, scrollY + vh - c.h / 2);
+				if (c.frozen) {
+					// an expanding card can poke past an edge: ease it back in
+					const step = PUSH_SPEED * dt;
+					c.px += Math.max(-step, Math.min(step, Math.min(Math.max(c.px, minX), maxX) - c.px));
+					c.py += Math.max(-step, Math.min(step, Math.min(Math.max(c.py, minY), maxY) - c.py));
+					continue;
+				}
 				// walls: reflect. a card well outside (below the fold, or the viewport
 				// scrolled past it) is steered back in rather than teleported.
-				if (c.x < minX) {
-					c.vx = Math.max(Math.abs(c.vx), c.x < minX - 10 ? ENTER_SPEED : 0);
-					if (c.x > minX - 10) c.x = minX;
-				} else if (c.x > maxX) {
-					c.vx = -Math.max(Math.abs(c.vx), c.x > maxX + 10 ? ENTER_SPEED : 0);
-					if (c.x < maxX + 10) c.x = maxX;
+				if (c.px < minX) {
+					c.vx = Math.max(Math.abs(c.vx), c.px < minX - 10 ? ENTER_SPEED : 0);
+					if (c.px > minX - 10) c.px = minX;
+				} else if (c.px > maxX) {
+					c.vx = -Math.max(Math.abs(c.vx), c.px > maxX + 10 ? ENTER_SPEED : 0);
+					if (c.px < maxX + 10) c.px = maxX;
 				}
-				if (c.y < minY) {
-					c.vy = Math.max(Math.abs(c.vy), c.y < minY - 10 ? ENTER_SPEED : 0);
-					if (c.y > minY - 10) c.y = minY;
-				} else if (c.y > maxY) {
-					c.vy = -Math.max(Math.abs(c.vy), c.y > maxY + 10 ? ENTER_SPEED : 0);
-					if (c.y < maxY + 10) c.y = maxY;
+				if (c.py < minY) {
+					c.vy = Math.max(Math.abs(c.vy), c.py < minY - 10 ? ENTER_SPEED : 0);
+					if (c.py > minY - 10) c.py = minY;
+				} else if (c.py > maxY) {
+					c.vy = -Math.max(Math.abs(c.vy), c.py > maxY + 10 ? ENTER_SPEED : 0);
+					if (c.py < maxY + 10) c.py = maxY;
 				}
 			}
 			// card vs card: axis-aligned boxes, resolve along the axis of least
-			// penetration, elastic exchange of the normal velocity (mass ~ area).
+			// penetration. a frozen (hovered) card is immovable, like a wall; two
+			// free cards trade normal velocity elastically (mass ~ area).
 			for (let i = 0; i < cards.length; i++) {
 				for (let j = i + 1; j < cards.length; j++) {
 					const a = cards[i], b = cards[j];
-					const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
-					const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+					if (a.frozen && b.frozen) continue;
+					const ox = (a.w + b.w) / 2 - Math.abs(a.px - b.px);
+					const oy = (a.h + b.h) / 2 - Math.abs(a.py - b.py);
 					if (ox <= 0 || oy <= 0) continue;
-					const ma = a.w * a.h, mb = b.w * b.h;
 					const horizontal = ox < oy;
-					const key = horizontal ? 'x' : 'y', vkey = horizontal ? 'vx' : 'vy';
-					const size = horizontal ? 'w' : 'h';
-					const sign = (a[key] + a[size] / 2) < (b[key] + b[size] / 2) ? -1 : 1; // a's side of b
-					const push = (horizontal ? ox : oy) / 2;
-					a[key] += sign * push;
-					b[key] -= sign * push;
+					const key = horizontal ? 'px' : 'py', vkey = horizontal ? 'vx' : 'vy';
+					const sign = a[key] < b[key] ? -1 : 1; // direction a moves to clear b
+					const depth = horizontal ? ox : oy;
+					if (a.frozen || b.frozen) {
+						const mover = a.frozen ? b : a;
+						const dir = a.frozen ? -sign : sign;
+						// shove at a capped rate so a neighbour caught by the expanding
+						// card slides clear instead of popping out
+						mover[key] += dir * Math.min(depth, PUSH_SPEED * dt);
+						if (mover[vkey] * dir < 0) mover[vkey] = -mover[vkey]; // bounce off it
+						else if (Math.abs(mover[vkey]) < MIN_SPEED) mover[vkey] = dir * MIN_SPEED;
+						continue;
+					}
+					a[key] += sign * depth / 2;
+					b[key] -= sign * depth / 2;
+					const ma = a.w * a.h, mb = b.w * b.h;
 					const va = a[vkey], vb = b[vkey];
 					// only exchange if they're actually closing on each other
 					if ((va - vb) * -sign > 0) {
@@ -426,7 +465,7 @@
 				}
 			}
 			for (const c of cards) {
-				c.el.style.transform = `translate(${(c.x - c.hx).toFixed(1)}px, ${(c.y - c.hy).toFixed(1)}px)`;
+				c.el.style.transform = `translate(${(c.px - c.hcx).toFixed(1)}px, ${(c.py - c.hcy).toFixed(1)}px)`;
 			}
 		}
 
@@ -441,11 +480,11 @@
 		function scatterCards() {
 			phase = 'roaming';
 			links.classList.add('scattered');
-			for (const c of cards) c.x = c.hx = c.y = c.hy = 0;
+			for (const c of cards) c.px = c.hcx = c.py = c.hcy = 0;
 			measureHomes();
 			for (const c of cards) {
-				c.x = c.hx;
-				c.y = c.hy;
+				c.px = c.hcx;
+				c.py = c.hcy;
 				const angle = Math.random() * Math.PI * 2;
 				const speed = MIN_SPEED + Math.random() * (MAX_SPEED - MIN_SPEED);
 				c.vx = Math.cos(angle) * speed;
@@ -465,8 +504,8 @@
 				for (const c of cards) {
 					c.el.classList.remove('snapping');
 					c.el.style.transform = '';
-					c.x = c.hx;
-					c.y = c.hy;
+					c.px = c.hcx;
+					c.py = c.hcy;
 				}
 				links.classList.remove('scattered');
 				phase = 'home';
